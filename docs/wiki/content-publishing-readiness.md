@@ -24,6 +24,29 @@ The endpoint creates a GitHub content PR, and GitHub Actions validates and merge
 `github.prReady` is `true` only when the deployed server has `GITHUB_CONTENT_TOKEN` configured.
 The token is server-only and must not be copied into the Obsidian plugin or any browser-public environment variable.
 
+## CLI verification
+
+Run the public readiness check from this repository:
+
+```bash
+pnpm verify:publishing
+```
+
+This verifies:
+
+- `GET /api/content-submissions` returns the expected contract
+- Markdown and HTML submissions are advertised as supported
+- the plugin download page links to the zip package
+- the public zip contains `main.js`, `manifest.json`, and `styles.css`
+
+After `GITHUB_CONTENT_TOKEN` is configured in Vercel, run the stricter gate:
+
+```bash
+pnpm verify:publishing -- --require-pr-ready
+```
+
+That stricter command fails if the deployed API still reports `github.prReady: false`.
+
 ## Obsidian operator flow
 
 1. Install and enable `Camp Publisher` in Obsidian.

@@ -135,3 +135,17 @@ After deployment, download the installable plugin zip from:
 ```txt
 https://camp-self.vercel.app/plugins/camp-publisher
 ```
+
+## Deployment readiness check
+
+Run this before asking study members to publish from Obsidian:
+
+```bash
+pnpm verify:publishing
+```
+
+After the server-only `GITHUB_CONTENT_TOKEN` is set in Vercel, require PR readiness too:
+
+```bash
+pnpm verify:publishing -- --require-pr-ready
+```
