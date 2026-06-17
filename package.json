@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "admin:create": "node scripts/create-admin.mjs"
+    "admin:create": "node scripts/create-admin.mjs",
+    "plugin:install": "node scripts/install-camp-publisher.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "latest",

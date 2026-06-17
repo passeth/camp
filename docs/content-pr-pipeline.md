@@ -88,7 +88,7 @@ Manual install:
 
 1. Copy `plugins/camp-publisher` to `<vault>/.obsidian/plugins/camp-publisher`.
 2. Enable `Camp Publisher` in Obsidian Community Plugins.
-3. Configure Camp URL, Supabase URL, and publishable key.
+3. Camp URL, Supabase URL, and the browser-public publishable key are prefilled for this Camp project.
 4. Run `Camp Publisher: Login to Camp`.
 5. Run `Camp Publisher: Insert Camp frontmatter` if the note has no frontmatter.
 6. Run `Camp Publisher: Submit current note to Camp`.
@@ -98,3 +98,13 @@ Expected result:
 ```txt
 Obsidian note -> Camp API -> GitHub PR -> GitHub Actions auto-merge -> Vercel deploy -> public post URL
 ```
+
+## Repository-assisted install
+
+If you have this repository locally, run:
+
+```bash
+pnpm plugin:install -- /absolute/path/to/your/obsidian/vault
+```
+
+The script copies only Obsidian runtime files: `manifest.json`, `main.js`, and `styles.css`.

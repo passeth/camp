@@ -1,9 +1,9 @@
-const { App, Modal, Notice, Plugin, PluginSettingTab, Setting, requestUrl } = require("obsidian");
+const { Modal, Notice, Plugin, PluginSettingTab, Setting, requestUrl } = require("obsidian");
 
 const DEFAULT_SETTINGS = {
   campBaseUrl: "https://camp-self.vercel.app",
   supabaseUrl: "https://pjttwbhjkprtdkquvawb.supabase.co",
-  supabasePublishableKey: "",
+  supabasePublishableKey: "sb_publishable_r4bVRy5wS8hJZq9Q_YL8mA_5PJ9An9T",
   email: "",
   accessToken: "",
   refreshToken: "",
@@ -195,6 +195,42 @@ class CampPublisherPlugin extends Plugin {
     await this.saveSettings();
   }
 
+
+  async refreshSession() {
+    if (!this.settings.refreshToken) return false;
+
+    const response = await requestUrl({
+      url: `${this.settings.supabaseUrl.replace(/\/$/, "")}/auth/v1/token?grant_type=refresh_token`,
+      method: "POST",
+      headers: {
+        apikey: this.settings.supabasePublishableKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh_token: this.settings.refreshToken }),
+      throw: false,
+    });
+
+    if (response.status < 200 || response.status >= 300) return false;
+
+    this.settings.accessToken = response.json.access_token;
+    this.settings.refreshToken = response.json.refresh_token || this.settings.refreshToken;
+    await this.saveSettings();
+    return true;
+  }
+
+  async submitToCamp(submission) {
+    return requestUrl({
+      url: `${this.settings.campBaseUrl.replace(/\/$/, "")}/api/content-submissions`,
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.settings.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ submission }),
+      throw: false,
+    });
+  }
+
   insertFrontmatter(editor) {
     const markdown = editor.getValue();
     if (markdown.startsWith("---\n")) {
@@ -247,16 +283,13 @@ class CampPublisherPlugin extends Plugin {
     }
 
     const submission = this.buildSubmission(editor.getValue());
-    const response = await requestUrl({
-      url: `${this.settings.campBaseUrl.replace(/\/$/, "")}/api/content-submissions`,
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.settings.accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ submission }),
-      throw: false,
-    });
+    await this.refreshSession();
+    let response = await this.submitToCamp(submission);
+
+    if (response.status === 401 || response.status === 403) {
+      const refreshed = await this.refreshSession();
+      if (refreshed) response = await this.submitToCamp(submission);
+    }
 
     if (response.status < 200 || response.status >= 300) {
       const message = response.json && response.json.error ? response.json.error : response.text;
