@@ -173,6 +173,19 @@ class CampPublisherPlugin extends Plugin {
     });
 
     this.addCommand({
+      id: "camp-check-connection",
+      name: "Check Camp connection",
+      callback: async () => {
+        try {
+          const status = await this.checkCampStatus();
+          new Notice(this.formatCampStatusNotice(status));
+        } catch (error) {
+          new Notice(`Camp check failed: ${error.message}`);
+        }
+      },
+    });
+
+    this.addCommand({
       id: "camp-insert-frontmatter",
       name: "Insert Camp frontmatter",
       editorCallback: (editor) => this.insertFrontmatter(editor),
@@ -240,6 +253,28 @@ class CampPublisherPlugin extends Plugin {
     this.settings.refreshToken = response.json.refresh_token || this.settings.refreshToken;
     await this.saveSettings();
     return true;
+  }
+
+  async checkCampStatus() {
+    const response = await requestUrl({
+      url: `${this.settings.campBaseUrl.replace(/\/$/, "")}/api/content-submissions`,
+      method: "GET",
+      throw: false,
+    });
+
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(response.text || `Camp status failed with ${response.status}`);
+    }
+
+    return response.json;
+  }
+
+  formatCampStatusNotice(status) {
+    const ready = status.github && status.github.prReady;
+    if (ready) return `Camp ready: ${status.github.repository}`;
+
+    const missing = status.github && status.github.missingEnv ? status.github.missingEnv.join(", ") : "GitHub PR configuration";
+    return `Camp not ready: missing ${missing}`;
   }
 
   async submitToCamp(submission) {
@@ -311,6 +346,12 @@ class CampPublisherPlugin extends Plugin {
       return;
     }
 
+    const status = await this.checkCampStatus();
+    if (!status.github || !status.github.prReady) {
+      const missing = status.github && status.github.missingEnv ? status.github.missingEnv.join(", ") : "GitHub PR configuration";
+      throw new Error(`Camp server is not ready to create PRs. Missing: ${missing}`);
+    }
+
     const submission = this.buildSubmission(editor.getValue());
     await this.refreshSession();
     let response = await this.submitToCamp(submission);
@@ -375,6 +416,14 @@ class CampPublisherSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Session")
       .setDesc(this.plugin.settings.accessToken ? "Logged in" : "Not logged in")
+      .addButton((button) => button.setButtonText("Check").onClick(async () => {
+        try {
+          const status = await this.plugin.checkCampStatus();
+          new Notice(this.plugin.formatCampStatusNotice(status));
+        } catch (error) {
+          new Notice(`Camp check failed: ${error.message}`);
+        }
+      }))
       .addButton((button) => button.setButtonText("Login").setCta().onClick(() => new LoginModal(this.app, this.plugin).open()))
       .addButton((button) => button.setButtonText("Logout").onClick(async () => {
         this.plugin.settings.accessToken = "";

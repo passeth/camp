@@ -191,10 +191,21 @@ export async function OPTIONS() {
 }
 
 export async function GET() {
+  const repository = process.env.GITHUB_REPOSITORY_NAME ?? process.env.GITHUB_REPOSITORY ?? "passeth/camp";
+  const baseBranch = process.env.GITHUB_BASE_BRANCH ?? "main";
+  const githubPrReady = Boolean(process.env.GITHUB_CONTENT_TOKEN);
+
   return jsonResponse({
     ok: true,
     contract: "camp.contentSubmission.v1",
     requiredAuth: "Authorization: Bearer <Supabase access token>",
+    supportedContentFormats: ["markdown", "html"],
+    github: {
+      prReady: githubPrReady,
+      repository,
+      baseBranch,
+      missingEnv: githubPrReady ? [] : ["GITHUB_CONTENT_TOKEN"],
+    },
   });
 }
 

@@ -12,9 +12,10 @@ This plugin submits the current Obsidian note to Camp. Camp creates a GitHub con
    - Camp site URL: `https://camp-self.vercel.app`
    - Supabase URL: `https://pjttwbhjkprtdkquvawb.supabase.co`
    - Supabase publishable key is prefilled because it is a browser-public key
-5. Run command `Camp Publisher: Login to Camp`.
-6. Open a Markdown note and run `Camp Publisher: Insert Camp frontmatter` if needed.
-7. Run `Camp Publisher: Submit current note to Camp`.
+5. Run command `Camp Publisher: Check Camp connection`. If it reports `GITHUB_CONTENT_TOKEN` as missing, the server cannot create PRs yet.
+6. Run command `Camp Publisher: Login to Camp`.
+7. Open a Markdown note and run `Camp Publisher: Insert Camp frontmatter` if needed.
+8. Run `Camp Publisher: Submit current note to Camp`.
 
 ## Required frontmatter
 
