@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --background: #f7f7f2;
+  --surface: #ffffff;
+  --surface-soft: #eef8f6;
+  --foreground: #171717;
+  --muted: #6d7280;
+  --line: #e7e5dc;
+  --brand: #111111;
+  --accent-blue: #5b9dff;
+  --accent-mint: #76dec6;
+  --accent-lime: #d7f45a;
+  --accent-violet: #9a6cff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.prose-lite h1,
+.prose-lite h2,
+.prose-lite h3 {
+  line-height: 1.15;
+  margin: 1.4rem 0 0.7rem;
+  color: #171717;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.prose-lite h1 {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+}
+
+.prose-lite h2 {
+  font-size: clamp(1.4rem, 2vw, 2rem);
+}
+
+.prose-lite p,
+.prose-lite li {
+  color: #424a57;
+  line-height: 1.85;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.prose-lite ul {
+  margin: 1.25rem 0;
+  padding-left: 1.25rem;
+}
+
+.prose-lite li {
+  margin-top: 0.6rem;
+}
+
+.prose-lite pre {
+  overflow-x: auto;
+  border: 1px solid #242424;
+  border-radius: 8px;
+  background: #171717;
+  color: #f9fafb;
+  padding: 1.25rem;
+}
+
+.post-body {
+  border-top: 1px solid #171717;
+  padding-top: 2rem;
+}
+
+.post-body > :first-child {
+  margin-top: 0;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: #fff;
+  color: var(--foreground);
+  padding: 0.8rem 0.9rem;
+  font: inherit;
+}
+
+textarea {
+  min-height: 16rem;
+  resize: vertical;
+}
+
+button {
+  cursor: pointer;
+  border: 0;
+  font: inherit;
+}
+
+.mesh-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  background:
+    radial-gradient(circle at 24px 24px, color-mix(in srgb, var(--mesh-color, #5b9dff) 76%, transparent) 0 2px, transparent 2.5px),
+    linear-gradient(135deg, color-mix(in srgb, var(--mesh-color, #5b9dff) 28%, white), #f7f7f2);
+  background-size: 12px 12px, 100% 100%;
+}
+
+.mesh-card::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background:
+    linear-gradient(90deg, transparent 0 58%, rgba(255, 255, 255, 0.72) 58% 100%),
+    linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.44));
+}
+
+.research-window {
+  position: relative;
+  z-index: 1;
+  border-radius: 8px;
+  border: 1px solid rgba(23, 23, 23, 0.08);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 20px 60px rgba(23, 23, 23, 0.09);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.prose-lite h1[id],
+.prose-lite h2[id],
+.prose-lite h3[id] {
+  scroll-margin-top: 7rem;
+}
