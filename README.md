@@ -85,3 +85,18 @@ Supabase stores auth, roles, comments, reactions, views, publish requests, and m
 - Configure the first admin user after signup.
 - Connect Vercel deployment.
 - Add Hermes Agent/VPS/Obsidian sync once the core site is stable.
+
+## Vercel deployment
+
+This repository includes `vercel.json` so Vercel treats the project as a Next.js app:
+
+```json
+{
+  "framework": "nextjs",
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm build",
+  "outputDirectory": ".next"
+}
+```
+
+Do not set the Vercel Project Settings Output Directory to `public`. This repo-level `vercel.json` overrides that mistaken setting and points Vercel at the Next.js build output.
