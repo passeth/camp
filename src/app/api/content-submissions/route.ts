@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { buildContentMarkdown, buildContentPath, contentSubmissionSchema } from "@/lib/content-submission";
+import { buildContentFile, buildContentPath, contentSubmissionSchema } from "@/lib/content-submission";
 
 export const runtime = "nodejs";
 
@@ -121,7 +121,7 @@ async function githubMaybeRequest<T>(path: string): Promise<T | null> {
 
 async function createContentPullRequest(params: {
   readonly path: string;
-  readonly markdown: string;
+  readonly content: string;
   readonly slug: string;
   readonly title: string;
   readonly memberSlug: string;
@@ -153,7 +153,7 @@ async function createContentPullRequest(params: {
     method: "PUT",
     body: {
       message: `Submit content: ${params.title}`,
-      content: Buffer.from(params.markdown, "utf8").toString("base64"),
+      content: Buffer.from(params.content, "utf8").toString("base64"),
       branch,
     },
   });
@@ -211,16 +211,16 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ error: "Invalid submission", issues: parsed.error.issues }, { status: 400 });
     }
 
-    const markdown = buildContentMarkdown(parsed.data.submission, member.author, member.memberSlug);
-    const path = buildContentPath(parsed.data.submission.type, parsed.data.submission.slug);
+    const content = buildContentFile(parsed.data.submission, member.author, member.memberSlug);
+    const path = buildContentPath(parsed.data.submission.type, parsed.data.submission.slug, parsed.data.submission.contentFormat);
 
     if (parsed.data.dryRun) {
-      return jsonResponse({ ok: true, dryRun: true, path, markdown });
+      return jsonResponse({ ok: true, dryRun: true, path, content });
     }
 
     const result = await createContentPullRequest({
       path,
-      markdown,
+      content,
       slug: parsed.data.submission.slug,
       title: parsed.data.submission.title,
       memberSlug: member.memberSlug,

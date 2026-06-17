@@ -74,12 +74,36 @@ function frontmatterBlock(values) {
     `title: "${values.title}"`,
     `slug: "${values.slug}"`,
     `type: "${values.type}"`,
+    `contentFormat: "${values.contentFormat || "markdown"}"`,
     `category: "${values.category || "Study"}"`,
     `tags: ${JSON.stringify(tags)}`,
     `excerpt: "${values.excerpt || "TODO: write a short summary"}"`,
     "---",
     "",
   ].join("\n");
+}
+
+
+function htmlTitle(html) {
+  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  return match ? match[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
+}
+
+function isHtmlBody(value) {
+  const trimmed = value.trim().toLowerCase();
+  return trimmed.startsWith("<!doctype html") || trimmed.startsWith("<html") || /<body[\s>]/i.test(value);
+}
+
+function excerptFromHtml(html) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(" ")
+    .slice(0, 220);
 }
 
 function firstHeading(markdown) {
@@ -238,14 +262,16 @@ class CampPublisherPlugin extends Plugin {
       return;
     }
 
-    const title = firstHeading(markdown) || "Untitled Camp Note";
+    const html = isHtmlBody(markdown);
+    const title = htmlTitle(markdown) || firstHeading(markdown) || "Untitled Camp Note";
     const values = {
       title,
       slug: slugify(title),
-      type: "press",
-      category: "Study",
-      tags: ["camp"],
-      excerpt: excerptFromBody(markdown),
+      type: html ? "teach" : "press",
+      contentFormat: html ? "html" : "markdown",
+      category: html ? "HTML Lesson" : "Study",
+      tags: html ? ["html", "lesson"] : ["camp"],
+      excerpt: html ? excerptFromHtml(markdown) : excerptFromBody(markdown),
     };
     editor.setValue(frontmatterBlock(values) + markdown.trimStart());
     new Notice("Camp frontmatter inserted");
@@ -253,11 +279,12 @@ class CampPublisherPlugin extends Plugin {
 
   buildSubmission(markdown) {
     const parsed = parseFrontmatter(markdown);
-    const title = String(parsed.data.title || firstHeading(parsed.body) || "").trim();
+    const html = String(parsed.data.contentFormat || "").trim() === "html" || isHtmlBody(parsed.body);
+    const title = String(parsed.data.title || (html ? htmlTitle(parsed.body) : firstHeading(parsed.body)) || "").trim();
     const slug = slugify(parsed.data.slug || title);
-    const type = String(parsed.data.type || "press").trim();
+    const type = String(parsed.data.type || (html ? "teach" : "press")).trim();
     const tags = Array.isArray(parsed.data.tags) ? parsed.data.tags : String(parsed.data.tags || "").split(",").map((tag) => tag.trim()).filter(Boolean);
-    const excerpt = String(parsed.data.excerpt || excerptFromBody(parsed.body)).trim();
+    const excerpt = String(parsed.data.excerpt || (html ? excerptFromHtml(parsed.body) : excerptFromBody(parsed.body))).trim();
 
     if (!title) throw new Error("Missing title");
     if (!slug) throw new Error("Missing slug");
@@ -271,7 +298,9 @@ class CampPublisherPlugin extends Plugin {
       category: String(parsed.data.category || "").trim(),
       tags,
       excerpt,
-      markdown: parsed.body,
+      contentFormat: html ? "html" : "markdown",
+      markdown: html ? undefined : parsed.body,
+      html: html ? parsed.body : undefined,
       status: "published",
     };
   }

@@ -31,6 +31,17 @@ excerpt: "Short summary for cards and search."
 
 Allowed `type` values: `press`, `topic`, `daily-review`, `study-log`, `teach`.
 
+## HTML files
+
+If the current note is a raw HTML document (`<!DOCTYPE html>` or `<html>`), `Insert Camp frontmatter` defaults it to:
+
+```md
+type: "teach"
+contentFormat: "html"
+```
+
+When submitted, Camp stores it as `content/teach/{slug}.html`. The website renders it inside the post page with a sandboxed iframe and a `전체보기` button.
+
 ## Install from this repository
 
 From the Camp repo you can copy runtime files directly into a vault:

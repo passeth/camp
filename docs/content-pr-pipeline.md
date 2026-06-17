@@ -22,10 +22,29 @@ Body:
     "title": "My note",
     "slug": "my-note",
     "type": "press",
+    "contentFormat": "markdown",
     "category": "AI Study",
     "tags": ["obsidian", "camp"],
     "excerpt": "Short summary shown on Camp cards.",
     "markdown": "# My note\n\nBody content...",
+    "status": "published"
+  }
+}
+```
+
+For HTML lessons, send `contentFormat: "html"` and use the `html` field instead of `markdown`:
+
+```json
+{
+  "submission": {
+    "title": "Interactive lesson",
+    "slug": "interactive-lesson",
+    "type": "teach",
+    "contentFormat": "html",
+    "category": "Lesson",
+    "tags": ["html", "lesson"],
+    "excerpt": "Interactive HTML lesson.",
+    "html": "<!DOCTYPE html><html>...</html>",
     "status": "published"
   }
 }
@@ -37,7 +56,7 @@ Allowed `type` values:
 - `topic` -> `content/topics/{slug}.md`
 - `daily-review` -> `content/daily-review/{slug}.md`
 - `study-log` -> `content/study-log/{slug}.md`
-- `teach` -> `content/teach/{slug}.md`
+- `teach` -> `content/teach/{slug}.md` or `content/teach/{slug}.html`
 
 The API verifies the Supabase user token, requires `member` or `admin`, generates Markdown frontmatter, creates a `content/{memberSlug}/...` branch, commits the Markdown file, and opens a GitHub PR.
 
@@ -72,7 +91,7 @@ Workflow: `.github/workflows/content-pr.yml`
 
 On PRs that touch `content/**`:
 
-1. Rejects non-Markdown or non-content changes.
+1. Rejects non-Markdown/non-HTML or non-content changes.
 2. Rejects content deletion in auto-merge PRs.
 3. Validates all content frontmatter and duplicate `type + slug` pairs.
 4. Runs `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
@@ -90,7 +109,7 @@ Manual install:
 2. Enable `Camp Publisher` in Obsidian Community Plugins.
 3. Camp URL, Supabase URL, and the browser-public publishable key are prefilled for this Camp project.
 4. Run `Camp Publisher: Login to Camp`.
-5. Run `Camp Publisher: Insert Camp frontmatter` if the note has no frontmatter.
+5. Run `Camp Publisher: Insert Camp frontmatter` if the note has no frontmatter. Raw HTML files are detected and default to `type: teach` plus `contentFormat: html`.
 6. Run `Camp Publisher: Submit current note to Camp`.
 
 Expected result:

@@ -26,6 +26,7 @@ const frontmatterSchema = z.object({
   title: z.string(),
   slug: z.string(),
   type: z.enum(contentTypes),
+  contentFormat: z.enum(["markdown", "html"]).optional(),
   status: z.enum(["draft", "review", "published", "archived"]).default("draft"),
   visibility: z.enum(["public", "members"]).default("public"),
   author: z.string(),
@@ -41,6 +42,7 @@ const frontmatterSchema = z.object({
 
 export type ContentEntry = z.infer<typeof frontmatterSchema> & {
   content: string;
+  contentFormat: "markdown" | "html";
   excerpt: string;
   href: string;
   pathSegments: string[];
@@ -50,21 +52,22 @@ function rootContentDir() {
   return path.join(process.cwd(), "content");
 }
 
-function walkMarkdownFiles(dir: string): string[] {
+function walkContentFiles(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) return walkMarkdownFiles(fullPath);
-    if (entry.isFile() && /\.mdx?$/.test(entry.name)) return [fullPath];
+    if (entry.isDirectory()) return walkContentFiles(fullPath);
+    if (entry.isFile() && /\.(mdx?|html)$/.test(entry.name)) return [fullPath];
     return [];
   });
 }
 
-function excerptFromContent(content: string) {
-  return content
-    .replace(/^# .+$/m, "")
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/[#*_`>-]/g, "")
+function excerptFromContent(content: string, format: "markdown" | "html" = "markdown") {
+  const plain = format === "html"
+    ? content.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ")
+    : content.replace(/^# .+$/m, "").replace(/```[\s\S]*?```/g, "").replace(/[#*_`>-]/g, "");
+
+  return plain
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
@@ -83,17 +86,20 @@ export function getAllContentEntries({ includeUnpublished = false }: { includeUn
 
 export function getEntriesByType(type: ContentType, { includeUnpublished = false }: { includeUnpublished?: boolean } = {}) {
   const dir = path.join(rootContentDir(), contentDirByType[type]);
-  return walkMarkdownFiles(dir)
+  return walkContentFiles(dir)
     .map((filePath) => {
       const raw = fs.readFileSync(filePath, "utf8");
       const parsed = matter(raw);
       const data = frontmatterSchema.parse(parsed.data);
-      const relative = path.relative(dir, filePath).replace(/\.mdx?$/, "");
+      const extension = path.extname(filePath);
+      const contentFormat = data.contentFormat ?? (extension === ".html" ? "html" : "markdown");
+      const relative = path.relative(dir, filePath).replace(/\.(mdx?|html)$/, "");
       const segments = relative.split(path.sep).filter(Boolean);
       return {
         ...data,
+        contentFormat,
         content: parsed.content.trim(),
-        excerpt: data.excerpt ?? excerptFromContent(parsed.content),
+        excerpt: data.excerpt ?? excerptFromContent(parsed.content, contentFormat),
         href: hrefForEntry(data.type, data.slug),
         pathSegments: segments,
       } satisfies ContentEntry;

@@ -1,0 +1,369 @@
+---
+title: "CPSR Annex I의 골격: Part A + Part B"
+slug: "0001-anatomy-of-cpsr"
+type: "teach"
+contentFormat: "html"
+status: "published"
+visibility: "public"
+author: "Camp Editorial"
+memberSlug: "camp-editorial"
+category: "Cosmetic Safety"
+tags: ["cpsr", "cosmetics", "regulatory", "lesson"]
+createdAt: "2026-06-17"
+publishedAt: "2026-06-17"
+excerpt: "CPSR Annex I의 Part A와 Part B 구조를 HTML lesson 형태로 설명합니다."
+---
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Lesson 0001 — CPSR Annex I의 골격: Part A + Part B</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --muted: #5a5a5a;
+    --line: #d8d3c7;
+    --accent: #7a3b2e;
+    --highlight: #fbf6ec;
+    --code-bg: #f3efe5;
+    --quiz-bg: #f9f5ea;
+    --warn: #b45309;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Iowan Old Style", "Georgia", "Apple SD Gothic Neo", "Noto Serif KR", serif;
+    color: var(--ink);
+    max-width: 760px;
+    margin: 60px auto;
+    padding: 0 28px 80px;
+    line-height: 1.7;
+    font-size: 17px;
+    background: #fefcf7;
+  }
+  .meta {
+    font-family: "SF Mono", "Menlo", monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 32px;
+    line-height: 1.25;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-style: italic;
+    margin-bottom: 36px;
+  }
+  h2 {
+    font-size: 22px;
+    margin: 48px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  h3 {
+    font-size: 18px;
+    margin: 32px 0 8px;
+    color: var(--accent);
+  }
+  p { margin: 12px 0; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 6px 0; }
+  code {
+    font-family: "SF Mono", "Menlo", monospace;
+    font-size: 14px;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+  .callout {
+    background: var(--highlight);
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    margin: 24px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout-warn {
+    background: #fef7e6;
+    border-left-color: var(--warn);
+  }
+  .callout .label {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .callout-warn .label { color: var(--warn); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 15px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    background: var(--code-bg);
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .section-num {
+    display: inline-block;
+    min-width: 28px;
+    color: var(--accent);
+    font-weight: 600;
+    font-family: "SF Mono", "Menlo", monospace;
+  }
+  .quiz {
+    background: var(--quiz-bg);
+    padding: 28px 32px;
+    margin: 40px 0;
+    border-radius: 8px;
+  }
+  .quiz h2 {
+    border: none;
+    margin-top: 0;
+  }
+  .question {
+    margin: 24px 0;
+  }
+  .answer {
+    margin-top: 8px;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 4px;
+  }
+  details {
+    margin: 8px 0;
+  }
+  details > summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 14px;
+    user-select: none;
+    list-style: revert;
+  }
+  details[open] > summary {
+    margin-bottom: 8px;
+  }
+  .nav {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .nav a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  .nav a:hover { border-bottom-color: var(--accent); }
+  .cite {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .cite a {
+    color: var(--muted);
+    text-decoration: underline;
+  }
+  .flow-box {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 12px 0;
+    background: #fff;
+  }
+  .flow-arrow {
+    text-align: center;
+    color: var(--accent);
+    font-size: 20px;
+    margin: 4px 0;
+  }
+  @media print {
+    body { background: #fff; max-width: 100%; margin: 0; }
+    .answer { display: block !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="meta">Lesson 0001 · 약 25분</div>
+<h1>CPSR Annex I의 골격</h1>
+<p class="subtitle">Safety Assessment가 어디에, 왜, 어떤 구조로 들어가는지 — 빈 그릇을 먼저 본다.</p>
+
+<div class="callout">
+  <span class="label">이 레슨의 약속</span>
+  레슨을 마치면 (1) PIF와 CPSR과 SA의 관계를 한 문장으로 설명하고, (2) Annex I Part A의 10개 섹션이 어떤 데이터를 담는지 짚을 수 있으며, (3) Part B의 4개 섹션이 어떤 논리 흐름인지 그릴 수 있다. 자사 제품의 SA를 직접 쓰기 위한 "지도"가 머릿속에 생긴다.
+</div>
+
+<h2>1. 큰 그림: PIF ⊃ CPSR ⊃ SA</h2>
+
+<p>EU 화장품 규정 1223/2009(이하 "EU Reg")는 시장에 출시되는 모든 화장품에 <strong>PIF(Product Information File, 제품 정보 파일)</strong>를 보유할 것을 의무화한다 (Art. 11). PIF는 제품의 모든 정보를 모은 마스터 폴더이다.</p>
+
+<p>그 PIF의 핵심 구성요소 중 하나가 <strong>CPSR(Cosmetic Product Safety Report)</strong>이다. CPSR은 EU Reg 부속서 <strong>Annex I</strong>에 그 구조가 법적으로 정의되어 있다.</p>
+
+<p>CPSR은 다시 두 부분으로 나뉜다:</p>
+
+<div class="flow-box">
+  <strong>Part A — Cosmetic Product Safety Information</strong><br>
+  <span class="cite">제조사·RA가 제공하는 "사실(facts)" — 10개 섹션의 데이터.</span>
+</div>
+<div class="flow-arrow">↓</div>
+<div class="flow-box">
+  <strong>Part B — Cosmetic Product Safety Assessment</strong><br>
+  <span class="cite">자격을 갖춘 Safety Assessor가 Part A의 데이터를 평가·해석해 결론을 내리는 "판단(judgement)" — 4개 섹션.</span>
+</div>
+
+<div class="callout">
+  <span class="label">한 문장으로</span>
+  Part A는 <em>제품에 대해 무엇이 사실인가</em>, Part B는 <em>그 사실들이 사용자에게 안전한가</em>를 묻는다. <strong>"SA 보고서"라고 부르는 것의 핵심은 Part B</strong>이지만, Part B는 Part A에 자료가 채워져 있어야만 쓸 수 있다.
+</div>
+
+<p class="cite">참조: <a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A02009R1223-20221217">EU Reg 1223/2009 Annex I (consolidated text, EUR-Lex)</a>. SCCS NoG 12판 §3-2 "The Safety Assessment Report".</p>
+
+<h2>2. Part A — 10개 섹션, 사실의 모음</h2>
+
+<p>Annex I이 명시한 Part A 10개 섹션을 그대로 옮긴다. 각각이 어떤 데이터를 담는지 한 줄로 정리:</p>
+
+<table>
+  <tr><th style="width: 36%;">섹션</th><th>담는 내용</th></tr>
+  <tr><td><span class="section-num">A.1</span> Quantitative and qualitative composition</td><td>정성·정량 처방. <strong>INCI + 농도(%)</strong>. 향료는 IFRA 카테고리·알레르겐 별도. 모든 후속 계산의 출발점.</td></tr>
+  <tr><td><span class="section-num">A.2</span> Physical/chemical characteristics and stability</td><td>제품의 외관·pH·점도·비중·미생물·물리적 안정성. ICH-Q1 유사 가속·장기 시험.</td></tr>
+  <tr><td><span class="section-num">A.3</span> Microbiological quality</td><td>미생물 한도, 보존력 시험(challenge test, ISO 11930).</td></tr>
+  <tr><td><span class="section-num">A.4</span> Impurities, traces, information about the packaging material</td><td>중금속·니트로사민·1,4-디옥산 등 불순물; 용기 재질의 추출/이행물질(extractables/leachables).</td></tr>
+  <tr><td><span class="section-num">A.5</span> Normal and reasonably foreseeable use</td><td>의도된 사용법 + 합리적으로 예측 가능한 오용(예: 얼굴용을 입술에 사용). 노출량(RfE) 산출의 근거.</td></tr>
+  <tr><td><span class="section-num">A.6</span> Exposure to the cosmetic product</td><td>제품 단위 노출량. 도포 부위·량·빈도·체류시간(leave-on/rinse-off). SCCS NoG Table 1 사용.</td></tr>
+  <tr><td><span class="section-num">A.7</span> Exposure to the substances</td><td>각 성분 단위 노출량 = (제품 노출량) × (성분 농도). 흡수율(dermal absorption) 적용. → SED 산출.</td></tr>
+  <tr><td><span class="section-num">A.8</span> Toxicological profile of the substances</td><td>각 성분의 독성 데이터: 급성, 자극·부식, 감작, 변이원성, 반복투여, 생식·발달, 발암성, 광독성, 흡입. <strong>NOAEL</strong> 식별.</td></tr>
+  <tr><td><span class="section-num">A.9</span> Undesirable effects and serious undesirable effects</td><td>이미 시판 중인 경우 발생한 부작용(UE/SUE) 보고 데이터. 신제품은 "Not applicable / first launch".</td></tr>
+  <tr><td><span class="section-num">A.10</span> Information on the cosmetic product</td><td>기타: 임상 시험, 인체 패치테스트(HRIPT), 효능 시험 결과, 자발적 시험 데이터.</td></tr>
+</table>
+
+<div class="callout callout-warn">
+  <span class="label">실무 함정</span>
+  Part A는 "제조사 자료실"이 아니라 <strong>SA가 그대로 써먹을 수 있게 가공된 데이터셋</strong>이어야 한다. 예: A.7은 "raw 처방표"가 아니라 "성분별 SED 계산표"여야 한다. Part B 작성자가 곧 Part A 작성자인 경우가 많은 이유다.
+</div>
+
+<h2>3. Part B — 4개 섹션, 판단의 흐름</h2>
+
+<p>Part B는 SA가 직접 쓰는 영역이다. 4개 섹션은 정해진 논리 순서를 따른다:</p>
+
+<table>
+  <tr><th style="width: 36%;">섹션</th><th>SA가 하는 일</th></tr>
+  <tr><td><span class="section-num">B.1</span> Assessment conclusion</td><td>제품이 의도된 사용 조건에서 안전한가에 대한 최종 결론. 한 문단. 조건부 안전, 라벨 경고문, 사용자 제한 명시 가능.</td></tr>
+  <tr><td><span class="section-num">B.2</span> Labelled warnings and instructions of use</td><td>안전 결론을 뒷받침하는 라벨 표시 요구사항. Annex III/IV/V/VI 의무 표시 + SA 판단에 따른 추가 경고.</td></tr>
+  <tr><td><span class="section-num">B.3</span> Reasoning</td><td><strong>SA의 본체</strong>. Part A의 각 데이터를 어떻게 해석했는지, 각 성분의 MoS, 상호작용, 데이터 갭에 대한 정당화. 가장 분량이 크다.</td></tr>
+  <tr><td><span class="section-num">B.4</span> Assessor's credentials and approval of Part B</td><td>SA의 자격(학력·면허·경력)과 서명·일자. EU에서는 약리학/독성학/의학/유사 학위 + 실무 경험 필요(EU Reg Art. 10).</td></tr>
+</table>
+
+<div class="callout">
+  <span class="label">읽는 순서 vs 쓰는 순서</span>
+  보고서를 읽을 땐 B.1 → B.4로 위에서 아래로 읽지만, <strong>쓸 땐 B.3 → B.1 → B.2 → B.4</strong> 순서로 쓴다. B.3에서 모든 평가를 끝낸 뒤에야 결론(B.1)을 쓸 수 있고, 결론을 알아야 라벨 경고(B.2)가 정해진다.
+</div>
+
+<p class="cite">참조: EU Reg 1223/2009 Annex I Part B 본문. SCCS NoG 12판 §3-6.5 "Reasoning".</p>
+
+<h2>4. SA 작성의 데이터 흐름</h2>
+
+<p>한 장으로 머릿속에 새겨야 할 흐름:</p>
+
+<div class="flow-box">
+  <strong>① 처방 (A.1)</strong> — INCI별 % 확정
+</div>
+<div class="flow-arrow">↓</div>
+<div class="flow-box">
+  <strong>② 제품 노출 (A.6)</strong> — 도포량·빈도·체류시간 → 일일 노출량 (mg/kg bw/day)
+</div>
+<div class="flow-arrow">↓</div>
+<div class="flow-box">
+  <strong>③ 성분 노출 (A.7)</strong> — 농도 × 흡수율 → <strong>SED</strong> (Systemic Exposure Dosage)
+</div>
+<div class="flow-arrow">↓</div>
+<div class="flow-box">
+  <strong>④ 성분 독성 (A.8)</strong> — 1차 자료에서 <strong>NOAEL</strong> 추출
+</div>
+<div class="flow-arrow">↓</div>
+<div class="flow-box">
+  <strong>⑤ MoS 계산 (B.3)</strong> — <code>MoS = NOAEL ÷ SED</code>, 목표 ≥ 100
+</div>
+<div class="flow-arrow">↓</div>
+<div class="flow-box">
+  <strong>⑥ 결론 (B.1)</strong> — 모든 성분이 MoS ≥ 100 충족 + 국소 안전성 OK → "Safe under normal and reasonably foreseeable use"
+</div>
+
+<p class="cite">SCCS NoG 12판 §3-6의 MoS 공식: <code>MoS = NOAEL / SED</code>. 임계값 100의 근거: 종간차 10 × 개체차 10 (default uncertainty factor).</p>
+
+<h2>5. Quiz — 자가 점검 (3문항)</h2>
+
+<div class="quiz">
+
+<div class="question">
+  <p><strong>Q1.</strong> 한 동료가 "이번 신제품 SA 보고서 작성을 외부에 맡겼다"고 말했다. 이 보고서가 PIF·CPSR과 어떤 관계인지 한 문장으로 설명한다면?</p>
+  <details>
+    <summary>모범 답안 보기</summary>
+    <div class="answer">
+      그 "SA 보고서"는 PIF의 일부인 CPSR의 Part B(평가)에 해당하며, Part A(제품 데이터)가 갖춰져 있어야 작성될 수 있다. 즉 외부 위탁의 실질은 Part B 작성·서명이며, Part A 데이터 패키지는 우리(제조사)가 미리 준비해서 넘겨줘야 한다.
+    </div>
+  </details>
+</div>
+
+<div class="question">
+  <p><strong>Q2.</strong> A.7 "Exposure to the substances"의 가장 중요한 산출물은 무엇이고, 이는 어떤 두 가지 정보를 곱해 만드는가?</p>
+  <details>
+    <summary>모범 답안 보기</summary>
+    <div class="answer">
+      산출물은 각 성분의 <strong>SED (Systemic Exposure Dosage, mg/kg bw/day)</strong>. 이는 ① 제품 단위 노출량(A.6) × ② 처방 내 성분 농도(A.1) × ③ 해당 성분의 dermal absorption rate를 적용해 얻는다. SED는 Part B에서 MoS 분모로 직접 쓰인다.
+    </div>
+  </details>
+</div>
+
+<div class="question">
+  <p><strong>Q3.</strong> Part B 4개 섹션을 "쓰는 순서"로 나열하라. 그 순서인 이유를 한 문장으로.</p>
+  <details>
+    <summary>모범 답안 보기</summary>
+    <div class="answer">
+      <strong>B.3 → B.1 → B.2 → B.4</strong>. B.3(Reasoning)에서 모든 성분 MoS·국소 안전성·상호작용·데이터 갭을 평가해야 비로소 B.1(Conclusion)에서 "안전" 결론을 내릴 수 있고, 결론이 정해진 뒤에야 B.2(Warnings)에 어떤 라벨 경고가 필요한지가 정해진다. B.4(자격·서명)는 마지막에 기록한다.
+    </div>
+  </details>
+</div>
+
+</div>
+
+<h2>6. 다음 단계</h2>
+
+<p>이 골격을 머리에 넣었으니, 다음 레슨은 두 갈래 중 하나로 갈 수 있다:</p>
+
+<ol>
+  <li><strong>프로젝트 앵커 제품 선정</strong> — 자사 leave-on 스킨케어 1개를 정하고, 그 처방표(INCI %)·사용법·도포량을 모아 A.1·A.5·A.6 초안 작성. (실전 진입)</li>
+  <li><strong>노출량 공식 마스터</strong> — SCCS NoG 12판의 SED 계산식, retention factor, dermal absorption 기본값을 손에 익히기. (B.3 핵심 도구)</li>
+</ol>
+
+<div class="callout">
+  <span class="label">교사에게 질문</span>
+  이해가 흐릿한 부분이 있으면 바로 물어보세요. "Part A.4의 '용기 이행물질'을 어디까지 평가하나?", "외부 SA가 Part A를 직접 만들 수도 있나?", "TFDA PIF는 EU와 어떻게 다른가?" 등 — 다음 레슨 설계에 반영합니다.
+</div>
+
+<div class="nav">
+  Next: <a href="0002-automation-tier-taxonomy.html">0002 — 4-Tier 자동화 분류 (시스템 backbone)</a> ·
+  Glossary: <a href="../reference/glossary.html">용어집</a> ·
+  Mission: <a href="../MISSION.md">MISSION.md</a>
+</div>
+
+</body>
+</html>

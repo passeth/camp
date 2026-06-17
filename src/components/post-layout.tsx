@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
+import { HtmlContentFrame } from "@/components/html-content-frame";
 import { MarkdownView } from "@/components/markdown-view";
 import { ShareLinkButton } from "@/components/share-link-button";
 import type { ContentEntry } from "@/lib/content";
@@ -25,8 +26,8 @@ type PostLayoutProps = {
 
 export function PostLayout({ entry, backHref, backLabel }: PostLayoutProps) {
   const date = entry.publishedAt ?? entry.createdAt;
-  const bodyContent = contentWithoutLeadingTitle(entry.content, entry.title);
-  const headings = getMarkdownHeadings(bodyContent);
+  const bodyContent = entry.contentFormat === "html" ? entry.content : contentWithoutLeadingTitle(entry.content, entry.title);
+  const headings = entry.contentFormat === "html" ? [] : getMarkdownHeadings(bodyContent);
 
   return (
     <article className="pb-16">
@@ -98,7 +99,7 @@ export function PostLayout({ entry, backHref, backLabel }: PostLayoutProps) {
             ) : null}
           </div>
         </aside>
-        <MarkdownView content={bodyContent} />
+        {entry.contentFormat === "html" ? <HtmlContentFrame html={bodyContent} title={entry.title} /> : <MarkdownView content={bodyContent} />}
       </div>
     </article>
   );
