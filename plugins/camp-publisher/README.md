@@ -51,3 +51,11 @@ pnpm plugin:install -- /absolute/path/to/your/vault
 ```
 
 Then reload Obsidian and enable `Camp Publisher`.
+
+## Download page
+
+After deployment, download the installable plugin zip from:
+
+```txt
+https://camp-self.vercel.app/plugins/camp-publisher
+```

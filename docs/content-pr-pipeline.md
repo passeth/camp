@@ -127,3 +127,11 @@ pnpm plugin:install -- /absolute/path/to/your/obsidian/vault
 ```
 
 The script copies only Obsidian runtime files: `manifest.json`, `main.js`, and `styles.css`.
+
+## Download page
+
+After deployment, download the installable plugin zip from:
+
+```txt
+https://camp-self.vercel.app/plugins/camp-publisher
+```

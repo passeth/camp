@@ -92,6 +92,12 @@ Obsidian plugin -> /api/content-submissions -> GitHub content PR -> GitHub Actio
 
 See `docs/content-pr-pipeline.md` for the submission contract, required GitHub/Vercel environment variables, and manual plugin installation steps.
 
+Plugin download page:
+
+```txt
+https://camp-self.vercel.app/plugins/camp-publisher
+```
+
 Manual plugin folder:
 
 ```txt
