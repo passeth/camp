@@ -47,6 +47,30 @@ pnpm verify:publishing -- --require-pr-ready
 
 That stricter command fails if the deployed API still reports `github.prReady: false`.
 
+## Submission flow verification
+
+Run the authenticated dry-run verifier to test the same Supabase login and Camp API submission path that the Obsidian plugin uses:
+
+```bash
+pnpm verify:submission
+```
+
+By default this:
+
+- signs in with `CAMP_EMAIL` / `CAMP_PASSWORD`, or the local `ADMIN_EMAIL` / `ADMIN_PASSWORD`
+- submits one Markdown dry-run payload
+- submits one HTML dry-run payload
+- verifies the generated content paths and rendered frontmatter
+- does not create a GitHub branch or PR
+
+After `pnpm verify:publishing -- --require-pr-ready` passes, run the live PR check explicitly:
+
+```bash
+pnpm verify:submission -- --live --yes --format markdown
+```
+
+Live mode creates a GitHub content PR. Use a single format per run unless you intentionally want multiple PRs.
+
 ## Obsidian operator flow
 
 1. Install and enable `Camp Publisher` in Obsidian.

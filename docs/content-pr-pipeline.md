@@ -149,3 +149,15 @@ After the server-only `GITHUB_CONTENT_TOKEN` is set in Vercel, require PR readin
 ```bash
 pnpm verify:publishing -- --require-pr-ready
 ```
+
+To test the authenticated Camp API submission path without creating a PR:
+
+```bash
+pnpm verify:submission
+```
+
+After PR readiness passes, create one real verification PR:
+
+```bash
+pnpm verify:submission -- --live --yes --format markdown
+```

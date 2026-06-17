@@ -11,7 +11,8 @@
     "admin:create": "node scripts/create-admin.mjs",
     "plugin:install": "node scripts/install-camp-publisher.mjs",
     "plugin:package": "node scripts/package-camp-publisher.mjs",
-    "verify:publishing": "node scripts/verify-publishing-readiness.mjs"
+    "verify:publishing": "node scripts/verify-publishing-readiness.mjs",
+    "verify:submission": "node scripts/verify-content-submission-flow.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "latest",
