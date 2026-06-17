@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { MarkdownView } from "@/components/markdown-view";
+import { ShareLinkButton } from "@/components/share-link-button";
 import type { ContentEntry } from "@/lib/content";
 import { getMarkdownHeadings } from "@/lib/markdown-headings";
 
@@ -68,6 +69,9 @@ export function PostLayout({ entry, backHref, backLabel }: PostLayoutProps) {
                 <dd className="mt-1 font-semibold text-[#171717]">{date}</dd>
               </div>
             </dl>
+            <div className="mt-6">
+              <ShareLinkButton />
+            </div>
             {entry.tags.length > 0 ? (
               <div className="mt-6">
                 <p className="text-xs font-semibold uppercase text-[#7a8190]">Hashtags</p>
