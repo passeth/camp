@@ -1,0 +1,10 @@
+{
+  "id": "camp-publisher",
+  "name": "Camp Publisher",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Submit the current Obsidian note to Camp as a GitHub content PR.",
+  "author": "Camp",
+  "authorUrl": "https://camp-self.vercel.app",
+  "isDesktopOnly": false
+}

@@ -1,0 +1,100 @@
+# Camp Content PR Pipeline
+
+## Goal
+
+A study member writes in Obsidian, submits the current note with the Camp Publisher plugin, and sees the content appear on the Camp website after GitHub Actions validates and auto-merges the generated content PR.
+
+## Submission contract v1
+
+Endpoint:
+
+```txt
+POST /api/content-submissions
+Authorization: Bearer <Supabase access token>
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "submission": {
+    "title": "My note",
+    "slug": "my-note",
+    "type": "press",
+    "category": "AI Study",
+    "tags": ["obsidian", "camp"],
+    "excerpt": "Short summary shown on Camp cards.",
+    "markdown": "# My note\n\nBody content...",
+    "status": "published"
+  }
+}
+```
+
+Allowed `type` values:
+
+- `press` -> `content/press/{slug}.md`
+- `topic` -> `content/topics/{slug}.md`
+- `daily-review` -> `content/daily-review/{slug}.md`
+- `study-log` -> `content/study-log/{slug}.md`
+- `teach` -> `content/teach/{slug}.md`
+
+The API verifies the Supabase user token, requires `member` or `admin`, generates Markdown frontmatter, creates a `content/{memberSlug}/...` branch, commits the Markdown file, and opens a GitHub PR.
+
+## Required Vercel environment variables
+
+Already required for the app:
+
+```txt
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+```
+
+Required for PR creation:
+
+```txt
+GITHUB_CONTENT_TOKEN
+GITHUB_REPOSITORY_NAME=passeth/camp
+GITHUB_BASE_BRANCH=main
+```
+
+`GITHUB_CONTENT_TOKEN` should be a fine-grained GitHub token or GitHub App installation token with the minimum repository permissions:
+
+- Contents: Read and write
+- Pull requests: Read and write
+- Metadata: Read
+
+Do not expose this token in Obsidian or any client-side code.
+
+## GitHub Actions behavior
+
+Workflow: `.github/workflows/content-pr.yml`
+
+On PRs that touch `content/**`:
+
+1. Rejects non-Markdown or non-content changes.
+2. Rejects content deletion in auto-merge PRs.
+3. Validates all content frontmatter and duplicate `type + slug` pairs.
+4. Runs `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
+5. Auto-merges same-repository branches whose name starts with `content/`.
+
+If validation fails, the PR remains open for manual review.
+
+## Obsidian plugin MVP
+
+Folder: `plugins/camp-publisher/`
+
+Manual install:
+
+1. Copy `plugins/camp-publisher` to `<vault>/.obsidian/plugins/camp-publisher`.
+2. Enable `Camp Publisher` in Obsidian Community Plugins.
+3. Configure Camp URL, Supabase URL, and publishable key.
+4. Run `Camp Publisher: Login to Camp`.
+5. Run `Camp Publisher: Insert Camp frontmatter` if the note has no frontmatter.
+6. Run `Camp Publisher: Submit current note to Camp`.
+
+Expected result:
+
+```txt
+Obsidian note -> Camp API -> GitHub PR -> GitHub Actions auto-merge -> Vercel deploy -> public post URL
+```

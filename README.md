@@ -16,6 +16,9 @@ AI-powered study magazine / wiki / archive platform for study members.
 - Supabase migration for profiles, roles, publish requests, comments, reactions, views, and RLS
 - Member-only dashboard, write page, and Agent placeholder
 - Admin pages for member approval and publish request review
+- Content submission API that turns approved member notes into GitHub PRs
+- GitHub Actions content PR validation and same-repo auto-merge
+- MVP Obsidian plugin under `plugins/camp-publisher/`
 
 ## Local development
 
@@ -79,12 +82,42 @@ Published content lives in Markdown files under:
 
 Supabase stores auth, roles, comments, reactions, views, publish requests, and metadata. The browser never pushes to Git directly.
 
+## Obsidian publishing MVP
+
+The first publishing path is PR-based, not direct Git push from Obsidian.
+
+```txt
+Obsidian plugin -> /api/content-submissions -> GitHub content PR -> GitHub Actions validation -> auto-merge -> Vercel deploy
+```
+
+See `docs/content-pr-pipeline.md` for the submission contract, required GitHub/Vercel environment variables, and manual plugin installation steps.
+
+Manual plugin folder:
+
+```txt
+plugins/camp-publisher
+```
+
+Copy that folder into an Obsidian vault at:
+
+```txt
+<vault>/.obsidian/plugins/camp-publisher
+```
+
+Required server-side env for PR creation:
+
+```bash
+GITHUB_CONTENT_TOKEN=
+GITHUB_REPOSITORY_NAME=passeth/camp
+GITHUB_BASE_BRANCH=main
+```
+
 ## Future work
 
-- Apply Supabase migration to the project database.
-- Configure the first admin user after signup.
-- Connect Vercel deployment.
-- Add Hermes Agent/VPS/Obsidian sync once the core site is stable.
+- Package and release `camp-publisher` as a proper Obsidian community/plugin zip.
+- Add refresh-token handling in the plugin.
+- Add Agent review comments on generated PRs.
+- Add richer Admin visibility for PR/deploy status.
 
 ## Vercel deployment
 
