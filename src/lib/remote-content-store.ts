@@ -48,6 +48,13 @@ export type RemoteContentInput = {
   };
 };
 
+export class RemoteContentConflictError extends Error {
+  constructor() {
+    super("Content slug already exists.");
+    this.name = "RemoteContentConflictError";
+  }
+}
+
 function serverEnv(name: string) {
   return process.env[name];
 }
@@ -230,7 +237,7 @@ export async function getRemoteEntriesByType(type: ContentType, { includeUnpubli
 export async function remoteContentExists(type: ContentType, slug: string) {
   if (!(await canUseRemoteContent({ requireWrite: true }))) return false;
 
-  const supabase = createAnonClient();
+  const supabase = hasServiceRoleKey() ? createAdminClient() : createAnonClient();
   const { data, error } = await supabase
     .from("content_index")
     .select("id")
@@ -270,6 +277,7 @@ export async function createRemoteContent(input: RemoteContentInput) {
       parent_slug: replyTo.parent_slug,
     });
 
+  if (error?.code === "23505") throw new RemoteContentConflictError();
   if (error) throw error;
 }
 

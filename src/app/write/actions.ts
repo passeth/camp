@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { contentTypes, type ContentType } from "@/lib/content";
 import { markdownToHtmlDocument } from "@/lib/markdown-to-html";
-import { canUseRemoteContent, createRemoteContent, remoteContentExists } from "@/lib/remote-content-store";
+import { canUseRemoteContent, createRemoteContent, remoteContentExists, RemoteContentConflictError } from "@/lib/remote-content-store";
 
 const publishMenus = ["press", "topic", "study-log", "camp-session"] as const;
 type PublishMenu = (typeof publishMenus)[number];
@@ -104,6 +104,10 @@ async function uniqueSlug(type: PublishMenu, slug: string) {
   }
 
   return candidate;
+}
+
+function nextSlugCandidate(baseSlug: string, attempt: number) {
+  return attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
 }
 
 function hrefForType(type: PublishMenu, slug: string) {
@@ -222,28 +226,38 @@ export async function createPublishPost(formData: FormData) {
     : undefined;
 
   if (await canUseRemoteContent({ requireWrite: true })) {
-    let remotePublished = false;
+    let remotePublishedSlug: string | undefined;
     try {
-      await createRemoteContent({
-        title: submission.title,
-        slug: submission.slug,
-        type: submission.type,
-        author: submission.authorName,
-        memberSlug: slugify(submission.authorName),
-        category: submission.category,
-        tags,
-        excerpt,
-        html: submission.html,
-        replyTo,
-      });
-      remotePublished = true;
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const candidateSlug = nextSlugCandidate(baseSlug, attempt);
+        try {
+          await createRemoteContent({
+            title: submission.title,
+            slug: candidateSlug,
+            type: submission.type,
+            author: submission.authorName,
+            memberSlug: slugify(submission.authorName),
+            category: submission.category,
+            tags,
+            excerpt,
+            html: submission.html,
+            replyTo,
+          });
+          remotePublishedSlug = candidateSlug;
+          break;
+        } catch (error) {
+          if (error instanceof RemoteContentConflictError) continue;
+          throw error;
+        }
+      }
+      if (!remotePublishedSlug) throw new Error("사용 가능한 게시글 주소를 만들지 못했습니다.");
     } catch (error) {
       console.error(error);
-      const detail = error instanceof Error ? error.message : undefined;
+      const detail = error instanceof Error ? error.message : JSON.stringify(error);
       if (process.env.VERCEL) redirect(writeErrorHref("remote-publish", detail));
     }
     if (process.env.VERCEL) {
-      redirect(remotePublished ? hrefForType(submission.type, submission.slug) : "/write?error=remote-publish");
+      redirect(remotePublishedSlug ? hrefForType(submission.type, remotePublishedSlug) : "/write?error=remote-publish");
     }
   } else if (process.env.VERCEL) {
     redirect("/write?error=remote-publish");

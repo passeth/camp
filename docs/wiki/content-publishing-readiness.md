@@ -18,7 +18,7 @@ Current behavior:
 - posts can also carry `replyTo` metadata, which links a long-form reply post back to its parent post and lets the parent render that reply alongside short comments
 - when a post is created from `게시글로 답하기`, the write form defaults to the parent post's menu instead of always defaulting to `Study Log`
 - local development falls back to writing a published `.html` content file under the matching `content/` folder
-- duplicate slugs are resolved with numeric suffixes such as `-2` and `-3`
+- duplicate slugs are resolved with numeric suffixes such as `-2` and `-3`; production writes also retry on final Supabase unique-key conflicts
 - the user is redirected directly to the public post URL
 
 This path is intentionally separate from the Obsidian plugin PR flow below.
