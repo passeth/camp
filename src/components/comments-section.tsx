@@ -145,7 +145,7 @@ export function CommentsSection({ contentType, contentSlug, replyPostHref, reply
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <p className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-sm font-semibold text-[var(--muted)]">{comments.length + replyPosts.length}개</p>
-          <Link href={replyPostHref} className="rounded-full border border-[var(--foreground)] bg-[var(--foreground)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-80">
+          <Link href={replyPostHref} className="rounded-full border border-[var(--foreground)] bg-[var(--foreground)] px-4 py-2 text-sm font-semibold !text-white transition hover:opacity-80">
             게시글로 답하기
           </Link>
         </div>

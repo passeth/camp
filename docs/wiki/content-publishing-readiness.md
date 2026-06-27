@@ -22,6 +22,8 @@ This path is intentionally separate from the Obsidian plugin PR flow below.
 
 Production deployments must not rely on runtime writes to `content/`. Vercel Functions only provide temporary writable filesystem space, so deployed community uploads need persistent storage. Apply `supabase/migrations/0006_content_index_body.sql` before enabling immediate public uploads in production; it adds `content_format`, `content`, and `excerpt` to `content_index`. Apply `supabase/migrations/0007_content_index_reply_links.sql` as well before enabling post-as-reply links in production; it adds `parent_type` and `parent_slug`.
 
+Short comments also prefer Supabase. If Supabase is unavailable in a Vercel deployment, the local fallback writes to `/tmp` so the API does not fail on the read-only function bundle, but that fallback is temporary and not durable across cold starts or deployments.
+
 ## Readiness contract
 
 `GET /api/content-submissions` is public and returns the current publishing contract plus server readiness:

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { z } from "zod";
 import { createPasswordHash, verifyPassword } from "@/lib/comment-password";
@@ -41,6 +42,7 @@ function toPayload(comment: LocalComment): LocalCommentPayload {
 }
 
 function storePath() {
+  if (process.env.VERCEL) return path.join(tmpdir(), "camp-comments.json");
   return path.join(process.cwd(), "data", "comments.json");
 }
 
