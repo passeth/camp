@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const requestSchema = z.object({
-  note: z.string().trim().min(1).max(2_000),
+  note: z.string().trim().max(2_000).optional().default(""),
   url: z.string().trim().url().max(2_000),
 });
 
@@ -240,6 +240,10 @@ async function sourceForUrl(url: URL) {
 }
 
 async function summarize(source: SourceContext, note: string) {
+  const noteContext = note.trim()
+    ? `User shared note, optional context only: ${note.trim()}`
+    : "User shared note: not provided.";
+
   const response = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: {
@@ -258,7 +262,7 @@ async function summarize(source: SourceContext, note: string) {
         {
           role: "user",
           content: [
-            `User shared note, optional context only: ${note}`,
+            noteContext,
             `Source kind: ${source.kind}`,
             `URL: ${source.canonicalUrl}`,
             `Title: ${source.title}`,

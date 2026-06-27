@@ -23,19 +23,23 @@ export function WallClimbForm({ action }: { readonly action: typeof createWallCl
   function summarize() {
     setMessage("");
     startSummarizing(async () => {
-      const response = await fetch("/api/wall-climb/summary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note, url: sourceUrl }),
-      });
-      const payload = await response.json() as { readonly error?: string; readonly summary?: WallSummary };
-      if (!response.ok || !payload.summary) {
-        setMessage(payload.error ?? "요약을 만들지 못했습니다.");
-        return;
+      try {
+        const response = await fetch("/api/wall-climb/summary", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ note, url: sourceUrl }),
+        });
+        const payload = await response.json() as { readonly error?: string; readonly summary?: WallSummary };
+        if (!response.ok || !payload.summary) {
+          setMessage(payload.error ?? "요약을 만들지 못했습니다.");
+          return;
+        }
+        setSummary(payload.summary);
+        setSummaryText(payload.summary.summary);
+        setMessage("요약이 준비되었습니다.");
+      } catch {
+        setMessage("요약 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.");
       }
-      setSummary(payload.summary);
-      setSummaryText(payload.summary.summary);
-      setMessage("요약이 준비되었습니다.");
     });
   }
 
@@ -61,7 +65,7 @@ export function WallClimbForm({ action }: { readonly action: typeof createWallCl
             <button
               type="button"
               onClick={summarize}
-              disabled={isSummarizing || !sourceUrl.trim() || !note.trim()}
+              disabled={isSummarizing || !sourceUrl.trim()}
               className="inline-flex h-12 items-center justify-center rounded-xl border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSummarizing ? "요약 중..." : "요약"}
