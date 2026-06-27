@@ -34,8 +34,8 @@ export function WritePostForm({ action, replyTo }: WritePostFormProps) {
 
   const hasGeneratedDraft = generatedMarkdown.trim().length > 0;
   const helperText = useMemo(() => {
-    if (hasGeneratedDraft) return "생성된 마크다운을 검토한 뒤 바로 게시할 수 있습니다.";
-    return "파일을 올리거나 GitHub/YouTube 링크로 초안을 만든 뒤 게시하세요.";
+    if (hasGeneratedDraft) return "생성된 마크다운을 검토한 뒤 바로 게시하거나 아래 본문에 직접 붙여 넣어 게시할 수 있습니다.";
+    return "파일을 올리거나, 본문을 직접 입력하거나, GitHub/YouTube 링크로 초안을 만든 뒤 게시하세요.";
   }, [hasGeneratedDraft]);
 
   function generateDraft() {
@@ -96,7 +96,7 @@ export function WritePostForm({ action, replyTo }: WritePostFormProps) {
           </select>
         </label>
         <label className="text-sm font-medium text-[#374151]">
-          파일 형식
+          직접 입력 형식
           <select className="mt-2" name="uploadFormat" defaultValue="markdown" required>
             <option value="markdown">Markdown</option>
             <option value="html">HTML</option>
@@ -125,6 +125,14 @@ export function WritePostForm({ action, replyTo }: WritePostFormProps) {
         <label className="text-sm font-medium text-[#374151] md:col-span-2">
           파일
           <input className="mt-2" name="contentFile" type="file" accept=".md,.markdown,.html,.htm,text/markdown,text/html" />
+        </label>
+        <label className="text-sm font-medium text-[#374151] md:col-span-2">
+          본문
+          <textarea
+            className="mt-2 min-h-56 text-sm leading-6"
+            name="manualContent"
+            placeholder="파일 없이 바로 올릴 Markdown 또는 HTML 본문을 붙여 넣으세요."
+          />
         </label>
         <label className="text-sm font-medium text-[#374151]">
           Category

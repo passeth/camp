@@ -13,6 +13,14 @@ function parseReplyTo(type?: string, slug?: string) {
   return { type: contentType, slug };
 }
 
+function errorMessage(error?: string) {
+  if (error === "remote-publish") return "게시글 저장소에 연결하지 못했습니다. Supabase 설정을 확인한 뒤 다시 시도하세요.";
+  if (error === "missing-content") return "파일을 올리거나 본문을 입력한 뒤 게시하세요.";
+  if (error === "file-format") return "선택한 파일 형식과 업로드한 파일 확장자가 맞지 않습니다.";
+  if (error === "invalid-input") return "작성자, 제목, 메뉴, 파일 형식을 확인해 주세요.";
+  return "입력값을 확인하거나 잠시 후 다시 시도하세요.";
+}
+
 export default async function WritePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const replyTo = parseReplyTo(params.replyToType, params.replyToSlug);
@@ -29,9 +37,7 @@ export default async function WritePage({ searchParams }: PageProps) {
         ) : null}
         {params.error ? (
           <p className="mt-5 rounded-2xl bg-[#fff4d6] p-4 text-sm text-[#8a5a00]">
-            {params.error === "remote-publish"
-              ? "게시글 저장소에 연결하지 못했습니다. Supabase 설정을 확인한 뒤 다시 시도하세요."
-              : "입력값을 확인하거나 잠시 후 다시 시도하세요."}
+            {errorMessage(params.error)}
           </p>
         ) : null}
         {params.status === "published" ? <p className="mt-5 rounded-2xl bg-[#eef9ef] p-4 text-sm text-[#256232]">게시글이 공개되었습니다.</p> : null}

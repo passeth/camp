@@ -10,7 +10,7 @@ The `/write` page is the direct community publishing path. It does not use the S
 Current behavior:
 
 - visitors choose the destination menu: `Study Log`, `Topics`, `News Digest`, or `Camp Session`
-- visitors upload a Markdown or HTML file
+- visitors upload a Markdown or HTML file, or paste Markdown/HTML directly into the body field
 - visitors can paste a GitHub or YouTube link and ask the server to generate a structured Korean Markdown draft
 - Markdown uploads are converted into a standalone HTML document on the server
 - generated link drafts can be reviewed in the write form and published directly without creating a local file first

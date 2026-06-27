@@ -27,6 +27,7 @@ const publishRequestSchema = z.object({
   uploadFormat: z.enum(["markdown", "html"]),
   tags: z.string().optional(),
   generatedMarkdown: z.string().max(500000).optional(),
+  manualContent: z.string().max(500000).optional(),
   sourceUrl: z.string().trim().url().max(2000).optional().or(z.literal("")),
   parentType: z.enum(contentTypes).optional(),
   parentSlug: z.string().trim().min(1).max(160).optional(),
@@ -68,9 +69,10 @@ function slugify(value: string) {
     .slice(0, 120) || "uploaded-post";
 }
 
-function fileMatchesFormat(fileName: string, format: "markdown" | "html") {
-  if (format === "html") return /\.html?$/i.test(fileName);
-  return /\.(md|markdown)$/i.test(fileName);
+function formatFromFileName(fileName: string) {
+  if (/\.html?$/i.test(fileName)) return "html" as const;
+  if (/\.(md|markdown)$/i.test(fileName)) return "markdown" as const;
+  return undefined;
 }
 
 async function pathExists(filePath: string) {
@@ -174,17 +176,21 @@ export async function createPublishPost(formData: FormData) {
     uploadFormat: formData.get("uploadFormat"),
     tags: optionalFormText(formData, "tags"),
     generatedMarkdown: optionalFormText(formData, "generatedMarkdown"),
+    manualContent: optionalFormText(formData, "manualContent"),
     sourceUrl: optionalFormText(formData, "sourceUrl"),
     parentType: optionalFormText(formData, "parentType"),
     parentSlug: optionalFormText(formData, "parentSlug"),
   });
 
   if (!parsed.success) redirect("/write?error=invalid-input");
-  if (!uploadFile && !parsed.data.generatedMarkdown) redirect("/write?error=invalid-input");
-  if (uploadFile && !fileMatchesFormat(uploadFile.name, parsed.data.uploadFormat)) redirect("/write?error=invalid-input");
+  if (!uploadFile && !parsed.data.generatedMarkdown && !parsed.data.manualContent) redirect("/write?error=missing-content");
+  const uploadFormat = uploadFile ? formatFromFileName(uploadFile.name) : undefined;
+  if (uploadFile && !uploadFormat) redirect("/write?error=file-format");
 
-  const sourceContent = uploadFile ? await uploadFile.text() : parsed.data.generatedMarkdown!;
-  const sourceFormat = uploadFile ? parsed.data.uploadFormat : "markdown";
+  const sourceContent = uploadFile
+    ? await uploadFile.text()
+    : parsed.data.generatedMarkdown ?? parsed.data.manualContent!;
+  const sourceFormat = uploadFile ? uploadFormat! : parsed.data.generatedMarkdown ? "markdown" : parsed.data.uploadFormat;
   const baseTitle = parsed.data.title || (uploadFile ? titleFromFile(uploadFile.name) : "링크 정리");
   const baseSlug = parsed.data.slug || slugify(baseTitle || (uploadFile ? basename(uploadFile.name) : "link-draft"));
   const slug = await uniqueSlug(parsed.data.type, baseSlug);
