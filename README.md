@@ -1,26 +1,73 @@
 # Camp
 
-AI-powered study magazine / wiki / archive platform for study members.
+Camp is a community-style study archive for publishing study notes, bootcamp materials, shared links, and news digests. The current product is optimized for fast posting, public replies, hashtag discovery, and lightweight admin moderation.
 
-## Repository
+## Current Product
 
-- GitHub: https://github.com/passeth/camp
-- Default branch: `main`
+Camp exposes four main community sections:
 
-## Implemented MVP foundation
+- `Study Log`: meeting notes, study records, decks, and follow-up posts.
+- `Camp Session`: bootcamp weekly learning materials and practice notes.
+- `벽타기`: links shared from chat rooms, with original-link previews and short AI summaries.
+- `News Digest`: external news, resources, and short digest posts.
 
-- Next.js App Router, TypeScript, Tailwind CSS
-- Git-backed Markdown content loader under `content/`
-- Public pages for members, press, topics, daily reviews, study logs, and teach pages
-- Supabase Auth/client setup with server/browser split
-- Supabase migration for profiles, roles, publish requests, comments, reactions, views, and RLS
-- Member-only dashboard, write page, and Agent placeholder
-- Admin pages for member approval and publish request review
-- Content submission API that turns approved member notes into GitHub PRs
-- GitHub Actions content PR validation and same-repo auto-merge
-- MVP Obsidian plugin under `plugins/camp-publisher/`
+Older routes such as members, daily review, teach, and topics still exist in the codebase for compatibility, but they are not part of the current primary navigation.
 
-## Local development
+## Core Flows
+
+### Posting
+
+- `/write` publishes immediately without login.
+- Writers choose the target section before posting.
+- Markdown and HTML files can be uploaded directly.
+- Markdown is converted to readable HTML, including tables and link/embed directives.
+- Direct body input is also supported.
+- GitHub and YouTube links can generate a draft through the link draft API.
+
+### Replies
+
+- Posts support public replies without login.
+- Replies require a nickname and a delete password.
+- Reply bodies auto-link URLs, show link cards, and embed YouTube previews when possible.
+- `게시글로 답하기` creates a full post connected to the original post.
+- Linked posts are shown from both sides so discussion threads can become backlinks.
+
+### Wall Climb
+
+`/wall-climb` is a lightweight shared-link board.
+
+- The `+` button opens a modal composer.
+- Users add a source link, author, shared note, editable summary, and hashtags.
+- The summarize action uses DeepSeek to summarize the linked source itself, not the user's shared note.
+- GitHub, YouTube, X, and general web links try to preserve native preview metadata.
+- Preview cards use the source image/title/description when available and open the original URL.
+- Long shared notes and summaries are collapsed by default and can be expanded.
+
+### Discovery
+
+- Hashtags are clickable on listing pages and detail pages.
+- The left community sidebar lists available hashtags with counts.
+- Listing pages support tag filtering through `?tag=...`.
+- Recent posts prioritize posts with replies or linked child posts and show reply counts.
+
+### Admin
+
+- Password-based admin login is available through `/login`.
+- `/admin/content` supports editing, deleting, and pinning posts.
+- Pinned posts are sorted above normal posts.
+- Deleted posts are archived/hidden from normal listings.
+
+## Tech Stack
+
+- Next.js App Router
+- React
+- TypeScript
+- Tailwind CSS
+- Supabase for deployed content, comments, and public posting
+- Local Markdown/HTML files under `content/` for local development seed content
+- DeepSeek API for link summaries
+
+## Local Development
 
 Install dependencies:
 
@@ -28,7 +75,7 @@ Install dependencies:
 pnpm install
 ```
 
-Create `.env.local` from `.env.example` and fill in the Supabase project values:
+Create local environment variables:
 
 ```bash
 cp .env.example .env.local
@@ -40,7 +87,7 @@ Run the app:
 pnpm dev
 ```
 
-Verify locally:
+Useful checks:
 
 ```bash
 pnpm typecheck
@@ -48,16 +95,36 @@ pnpm lint
 pnpm build
 ```
 
-## Required environment variables
+## Environment Variables
 
-Browser-exposed:
+Browser-exposed Supabase values:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
-Server-only, for migrations/scripts or direct Postgres access if needed:
+Server-only Supabase and admin values:
+
+```bash
+SUPABASE_SERVICE_ROLE_KEY=
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+ADMIN_DISPLAY_NAME=Camp Admin
+ADMIN_SLUG=camp-admin
+ADMIN_SESSION_SECRET=
+```
+
+Server-only AI and GitHub values:
+
+```bash
+DEEPSEEK_API_KEY=
+GITHUB_CONTENT_TOKEN=
+GITHUB_REPOSITORY_NAME=passeth/camp
+GITHUB_BASE_BRANCH=main
+```
+
+Optional direct database values for migration/scripts:
 
 ```bash
 DATABASE_URL=
@@ -68,66 +135,43 @@ SUPABASE_DB_NAME=postgres
 SUPABASE_DB_USER=postgres
 ```
 
-`NEXT_PUBLIC_*` values are browser-exposed by design. Do not add service-role keys, database passwords, GitHub tokens, VPS credentials, or other secrets to frontend code.
+Never expose service-role keys, database passwords, GitHub tokens, or DeepSeek keys through `NEXT_PUBLIC_*`.
 
-## Content model
+## Data Model
 
-Published content lives in Markdown files under:
+Local content lives in:
 
-- `content/press`
-- `content/topics`
-- `content/daily-review`
 - `content/study-log`
-- `content/teach`
+- `content/camp-session`
+- `content/wall-climb`
+- `content/press`
 
-Supabase stores auth, roles, comments, reactions, views, publish requests, and metadata. The browser never pushes to Git directly.
+Production content is written to Supabase through `content_index`. The app maps `camp-session` and `wall-climb` into the shared public content store while preserving their own routes and categories.
 
-## Obsidian publishing MVP
+Comments are stored through the comment store and support anonymous replies with password-based deletion.
 
-The first publishing path is PR-based, not direct Git push from Obsidian.
+Current Supabase migrations are in `supabase/migrations`:
 
-```txt
-Obsidian plugin -> /api/content-submissions -> GitHub content PR -> GitHub Actions validation -> auto-merge -> Vercel deploy
-```
+- `0001_initial.sql`
+- `0002_anonymous_comments.sql`
+- `0003_comment_passwords.sql`
+- `0005_publish_request_files.sql`
+- `0006_content_index_body.sql`
+- `0007_content_index_reply_links.sql`
+- `0008_public_content_posts.sql`
+- `0009_content_index_pinned.sql`
 
-See `docs/content-pr-pipeline.md` for the submission contract, required GitHub/Vercel environment variables, and manual plugin installation steps.
+Apply these migrations to the deployed Supabase project before relying on production posting, replies, linked posts, or pinned posts.
 
-Plugin download page:
+## Deployment
 
-```txt
-https://camp-self.vercel.app/plugins/camp-publisher
-```
-
-Manual plugin folder:
-
-```txt
-plugins/camp-publisher
-```
-
-Copy that folder into an Obsidian vault at:
+The production site runs on Vercel:
 
 ```txt
-<vault>/.obsidian/plugins/camp-publisher
+https://camp-self.vercel.app
 ```
 
-Required server-side env for PR creation:
-
-```bash
-GITHUB_CONTENT_TOKEN=
-GITHUB_REPOSITORY_NAME=passeth/camp
-GITHUB_BASE_BRANCH=main
-```
-
-## Future work
-
-- Package and release `camp-publisher` as a proper Obsidian community/plugin zip.
-- Add refresh-token handling in the plugin.
-- Add Agent review comments on generated PRs.
-- Add richer Admin visibility for PR/deploy status.
-
-## Vercel deployment
-
-This repository includes `vercel.json` so Vercel treats the project as a Next.js app:
+This repository includes `vercel.json` so Vercel builds it as a Next.js app:
 
 ```json
 {
@@ -138,4 +182,23 @@ This repository includes `vercel.json` so Vercel treats the project as a Next.js
 }
 ```
 
-Do not set the Vercel Project Settings Output Directory to `public`. This repo-level `vercel.json` overrides that mistaken setting and points Vercel at the Next.js build output.
+Do not set the Vercel project output directory to `public`; the app must deploy the `.next` output.
+
+For deployed write/reply/admin flows to work, Vercel must have the Supabase and admin environment variables above. For Wall Climb summaries, `DEEPSEEK_API_KEY` must also be configured.
+
+## Scripts
+
+```bash
+pnpm dev
+pnpm build
+pnpm start
+pnpm lint
+pnpm typecheck
+pnpm admin:create
+pnpm verify:publishing
+pnpm verify:submission
+pnpm plugin:install
+pnpm plugin:package
+```
+
+The Obsidian publisher plugin still exists under `plugins/camp-publisher`, but it is no longer the primary posting flow. The primary flow is direct web posting through `/write` and `/wall-climb`.
