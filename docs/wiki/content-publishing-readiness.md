@@ -16,6 +16,7 @@ Current behavior:
 - generated link drafts can be reviewed in the write form and published directly without creating a local file first
 - when Supabase remote content storage is configured, the app writes the published HTML body into `content_index`
 - posts can also carry `replyTo` metadata, which links a long-form reply post back to its parent post and lets the parent render that reply alongside short comments
+- when a post is created from `게시글로 답하기`, the write form defaults to the parent post's menu instead of always defaulting to `Study Log`
 - local development falls back to writing a published `.html` content file under the matching `content/` folder
 - duplicate slugs are resolved with numeric suffixes such as `-2` and `-3`
 - the user is redirected directly to the public post URL

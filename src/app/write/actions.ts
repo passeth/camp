@@ -11,6 +11,12 @@ import { canUseRemoteContent, createRemoteContent, remoteContentExists } from "@
 const publishMenus = ["press", "topic", "study-log", "camp-session"] as const;
 type PublishMenu = (typeof publishMenus)[number];
 
+function writeErrorHref(error: string, detail?: string) {
+  const params = new URLSearchParams({ error });
+  if (detail) params.set("detail", detail.slice(0, 120));
+  return `/write?${params.toString()}`;
+}
+
 const contentDirByMenu: Record<PublishMenu, string> = {
   press: "press",
   topic: "topics",
@@ -233,6 +239,8 @@ export async function createPublishPost(formData: FormData) {
       remotePublished = true;
     } catch (error) {
       console.error(error);
+      const detail = error instanceof Error ? error.message : undefined;
+      if (process.env.VERCEL) redirect(writeErrorHref("remote-publish", detail));
     }
     if (process.env.VERCEL) {
       redirect(remotePublished ? hrefForType(submission.type, submission.slug) : "/write?error=remote-publish");

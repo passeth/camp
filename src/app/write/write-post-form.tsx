@@ -20,10 +20,11 @@ type LinkDraft = {
 
 type WritePostFormProps = {
   readonly action: typeof createPublishPost;
+  readonly defaultType: ContentType;
   readonly replyTo?: ReplyTo;
 };
 
-export function WritePostForm({ action, replyTo }: WritePostFormProps) {
+export function WritePostForm({ action, defaultType, replyTo }: WritePostFormProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
@@ -88,7 +89,7 @@ export function WritePostForm({ action, replyTo }: WritePostFormProps) {
         </label>
         <label className="text-sm font-medium text-[#374151]">
           올릴 메뉴
-          <select className="mt-2" name="type" defaultValue="study-log" required>
+          <select className="mt-2" name="type" defaultValue={defaultType} required>
             <option value="study-log">Study Log</option>
             <option value="camp-session">Camp Session</option>
             <option value="topic">Topics</option>

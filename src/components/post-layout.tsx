@@ -29,6 +29,7 @@ function replyPostHrefForEntry(entry: ContentEntry) {
     replyToType: entry.type,
     replyToSlug: entry.slug,
     replyToTitle: entry.title,
+    defaultType: entry.type,
   });
   return `/write?${params.toString()}`;
 }

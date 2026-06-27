@@ -4,7 +4,7 @@ import { WritePostForm } from "./write-post-form";
 
 export const dynamic = "force-dynamic";
 
-type PageProps = { searchParams: Promise<{ error?: string; replyToSlug?: string; replyToTitle?: string; replyToType?: string; status?: string }> };
+type PageProps = { searchParams: Promise<{ defaultType?: string; detail?: string; error?: string; replyToSlug?: string; replyToTitle?: string; replyToType?: string; status?: string }> };
 
 function parseReplyTo(type?: string, slug?: string) {
   if (!type || !slug) return undefined;
@@ -13,17 +13,22 @@ function parseReplyTo(type?: string, slug?: string) {
   return { type: contentType, slug };
 }
 
-function errorMessage(error?: string) {
-  if (error === "remote-publish") return "게시글 저장소에 연결하지 못했습니다. Supabase 설정을 확인한 뒤 다시 시도하세요.";
+function errorMessage(error?: string, detail?: string) {
+  if (error === "remote-publish") {
+    return detail
+      ? `게시글 저장소에 연결하지 못했습니다. Supabase 설정을 확인한 뒤 다시 시도하세요. (${detail})`
+      : "게시글 저장소에 연결하지 못했습니다. Supabase 설정을 확인한 뒤 다시 시도하세요.";
+  }
   if (error === "missing-content") return "파일을 올리거나 본문을 입력한 뒤 게시하세요.";
   if (error === "file-format") return "선택한 파일 형식과 업로드한 파일 확장자가 맞지 않습니다.";
   if (error === "invalid-input") return "작성자, 제목, 메뉴, 파일 형식을 확인해 주세요.";
-  return "입력값을 확인하거나 잠시 후 다시 시도하세요.";
+  return detail ? `입력값을 확인해 주세요. (${detail})` : "입력값을 확인하거나 잠시 후 다시 시도하세요.";
 }
 
 export default async function WritePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const replyTo = parseReplyTo(params.replyToType, params.replyToSlug);
+  const defaultType = contentTypes.find((candidate) => candidate === params.defaultType) ?? replyTo?.type ?? "study-log";
 
   return (
     <div className="space-y-8">
@@ -37,12 +42,12 @@ export default async function WritePage({ searchParams }: PageProps) {
         ) : null}
         {params.error ? (
           <p className="mt-5 rounded-2xl bg-[#fff4d6] p-4 text-sm text-[#8a5a00]">
-            {errorMessage(params.error)}
+            {errorMessage(params.error, params.detail)}
           </p>
         ) : null}
         {params.status === "published" ? <p className="mt-5 rounded-2xl bg-[#eef9ef] p-4 text-sm text-[#256232]">게시글이 공개되었습니다.</p> : null}
       </section>
-      <WritePostForm action={createPublishPost} replyTo={replyTo ? { ...replyTo, title: params.replyToTitle } : undefined} />
+      <WritePostForm action={createPublishPost} defaultType={defaultType} replyTo={replyTo ? { ...replyTo, title: params.replyToTitle } : undefined} />
     </div>
   );
 }

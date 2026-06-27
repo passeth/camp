@@ -109,6 +109,22 @@ function remoteCategoryFor(input: RemoteContentInput) {
   return input.type === "camp-session" ? "camp-session" : input.category;
 }
 
+function remoteReplyToFor(replyTo?: RemoteContentInput["replyTo"]) {
+  if (!replyTo) return { parent_type: undefined, parent_slug: undefined };
+  if (replyTo.type === "camp-session") {
+    return { parent_type: "study-log" as const, parent_slug: `camp-session/${replyTo.slug}` };
+  }
+  return { parent_type: replyTo.type, parent_slug: replyTo.slug };
+}
+
+function localReplyToFor(row: Pick<z.infer<typeof contentRowSchema>, "parent_type" | "parent_slug">) {
+  if (!row.parent_type || !row.parent_slug) return undefined;
+  if (row.parent_type === "study-log" && row.parent_slug.startsWith("camp-session/")) {
+    return { type: "camp-session" as const, slug: row.parent_slug.replace(/^camp-session\//, "") };
+  }
+  return { type: row.parent_type, slug: row.parent_slug };
+}
+
 function shortDate(value?: string | null) {
   return value ? value.slice(0, 10) : undefined;
 }
@@ -142,7 +158,7 @@ function rowToEntry(row: z.infer<typeof contentRowSchema>): ContentEntry {
     publishedAt,
     content: row.content?.trim() ?? "",
     excerpt: row.excerpt ?? "",
-    replyTo: row.parent_type && row.parent_slug ? { type: row.parent_type, slug: row.parent_slug } : undefined,
+    replyTo: localReplyToFor(row),
     href: `${baseHrefForType(type)}/${row.slug}`.replace(/\/index$/, ""),
     pathSegments: row.slug.split("/").filter(Boolean),
   };
@@ -215,17 +231,12 @@ export async function remoteContentExists(type: ContentType, slug: string) {
   if (!(await canUseRemoteContent({ requireWrite: true }))) return false;
 
   const supabase = createAnonClient();
-  let query = supabase
+  const { data, error } = await supabase
     .from("content_index")
     .select("id")
     .eq("type", remoteTypeFor(type))
-    .eq("slug", slug);
-
-  if (type === "camp-session") {
-    query = query.eq("category", "camp-session");
-  }
-
-  const { data, error } = await query.maybeSingle();
+    .eq("slug", slug)
+    .maybeSingle();
 
   if (error) throw error;
   return Boolean(data);
@@ -237,7 +248,8 @@ export async function createRemoteContent(input: RemoteContentInput) {
   }
 
   const now = new Date().toISOString();
-  const supabase = createAnonClient();
+  const supabase = hasServiceRoleKey() ? createAdminClient() : createAnonClient();
+  const replyTo = remoteReplyToFor(input.replyTo);
   const { error } = await supabase
     .from("content_index")
     .insert({
@@ -254,8 +266,8 @@ export async function createRemoteContent(input: RemoteContentInput) {
       content_format: "html",
       content: input.html,
       excerpt: input.excerpt,
-      parent_type: input.replyTo?.type,
-      parent_slug: input.replyTo?.slug,
+      parent_type: replyTo.parent_type,
+      parent_slug: replyTo.parent_slug,
     });
 
   if (error) throw error;
@@ -268,6 +280,7 @@ export async function updateRemoteContent(type: ContentType, slug: string, input
 
   const admin = createAdminClient();
   const now = new Date().toISOString();
+  const replyTo = remoteReplyToFor(input.replyTo);
 
   if (type !== input.type || slug !== input.slug) {
     await deleteRemoteContent(type, slug);
@@ -288,8 +301,8 @@ export async function updateRemoteContent(type: ContentType, slug: string, input
       content_format: "html",
       content: input.html,
       excerpt: input.excerpt,
-      parent_type: input.replyTo?.type,
-      parent_slug: input.replyTo?.slug,
+      parent_type: replyTo.parent_type,
+      parent_slug: replyTo.parent_slug,
       published_at: now,
       updated_at: now,
     }, { onConflict: "type,slug" });
