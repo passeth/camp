@@ -36,6 +36,7 @@ data/publish-requests.json
 
 # local agent/runtime state
 .omx/
+.omo/
 
 # TypeScript
 tsconfig.tsbuildinfo
