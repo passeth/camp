@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { CommunityNav } from "@/components/community-nav";
+import type { TagSummary } from "@/lib/tags";
+import { tagHref } from "@/lib/tags";
 
-export function CommunitySidebar() {
+export function CommunitySidebar({ tags = [] }: { readonly tags?: readonly TagSummary[] }) {
   return (
     <aside className="hidden lg:block">
       <div className="sticky top-24 space-y-4">
@@ -21,6 +23,22 @@ export function CommunitySidebar() {
             게시글 올리기
           </Link>
         </section>
+        {tags.length > 0 ? (
+          <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Hashtags</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {tags.map((summary) => (
+                <Link
+                  key={summary.tag}
+                  href={tagHref(summary.tag)}
+                  className="rounded-full bg-[var(--surface-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--muted)] transition hover:bg-white hover:text-[var(--foreground)]"
+                >
+                  #{summary.tag} <span className="font-medium opacity-70">{summary.count}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
     </aside>
   );

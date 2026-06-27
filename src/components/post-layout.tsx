@@ -1,10 +1,14 @@
 import Link from "next/link";
+import { deleteContentPost } from "@/app/admin/content/actions";
 import { CommentsSection } from "@/components/comments-section";
 import { HtmlContentFrame } from "@/components/html-content-frame";
 import { MarkdownView } from "@/components/markdown-view";
 import { ShareLinkButton } from "@/components/share-link-button";
+import { canManageContent } from "@/lib/auth";
 import { getParentEntryForReplyAsync, getReplyEntriesForParentAsync, type ContentEntry } from "@/lib/content";
 import { getMarkdownHeadings } from "@/lib/markdown-headings";
+import { repairMarkdownTablesInHtml } from "@/lib/markdown-to-html";
+import { tagHref } from "@/lib/tags";
 
 function contentWithoutLeadingTitle(content: string, title: string) {
   const [firstLine, ...rest] = content.split("\n");
@@ -40,14 +44,20 @@ function replyPostSummary(entry: ContentEntry) {
   };
 }
 
+function adminEditHref(entry: ContentEntry) {
+  const params = new URLSearchParams({ type: entry.type, slug: entry.slug });
+  return `/admin/content/edit?${params.toString()}`;
+}
+
 export async function PostLayout({ entry, backHref, backLabel }: PostLayoutProps) {
   const date = entry.publishedAt ?? entry.createdAt;
-  const bodyContent = entry.contentFormat === "html" ? entry.content : contentWithoutLeadingTitle(entry.content, entry.title);
+  const bodyContent = entry.contentFormat === "html" ? repairMarkdownTablesInHtml(entry.content) : contentWithoutLeadingTitle(entry.content, entry.title);
   const headings = entry.contentFormat === "html" ? [] : getMarkdownHeadings(bodyContent);
   const [parentEntry, replyPosts] = await Promise.all([
     getParentEntryForReplyAsync(entry),
     getReplyEntriesForParentAsync(entry.type, entry.slug),
   ]);
+  const showAdminControls = await canManageContent();
 
   return (
     <article className="pb-16">
@@ -70,10 +80,27 @@ export async function PostLayout({ entry, backHref, backLabel }: PostLayoutProps
             <span className="font-semibold text-[#171717]">{entry.author}</span>
             <span className="text-[#7a8190]">{date}</span>
             {entry.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-white px-2.5 py-1 text-xs text-[#5b6270]">#{tag}</span>
+              <Link key={tag} href={tagHref(tag, entry.type)} className="rounded-full bg-white px-2.5 py-1 text-xs text-[#5b6270] transition hover:text-[#171717]">#{tag}</Link>
             ))}
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto md:shrink-0">
+            {showAdminControls ? (
+              <>
+                <Link
+                  href={adminEditHref(entry)}
+                  className="inline-flex justify-center whitespace-nowrap rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)]"
+                >
+                  수정
+                </Link>
+                <form action={deleteContentPost}>
+                  <input type="hidden" name="type" value={entry.type} />
+                  <input type="hidden" name="slug" value={entry.slug} />
+                  <button className="w-full rounded-full border border-[var(--foreground)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:bg-[var(--surface-soft)]">
+                    삭제
+                  </button>
+                </form>
+              </>
+            ) : null}
             <a
               href="#comments"
               className="inline-flex justify-center whitespace-nowrap rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)]"

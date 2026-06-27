@@ -24,6 +24,30 @@ This path is intentionally separate from the Obsidian plugin PR flow below.
 
 Production deployments must not rely on runtime writes to `content/`. Vercel Functions only provide temporary writable filesystem space, so deployed community uploads need persistent storage. Apply `supabase/migrations/0006_content_index_body.sql` before enabling immediate public uploads in production; it adds `content_format`, `content`, and `excerpt` to `content_index`. Apply `supabase/migrations/0007_content_index_reply_links.sql` as well before enabling post-as-reply links in production; it adds `parent_type` and `parent_slug`.
 
+Apply `supabase/migrations/0008_public_content_posts.sql` when visitors should publish directly without logging in. It keeps public inserts constrained to published, public, bounded-size content rows. Admin edits and deletes use `SUPABASE_SERVICE_ROLE_KEY`; deletes write an `archived` tombstone so remote storage can hide local fallback content with the same `{type, slug}`.
+
+## Admin content management
+
+Admins can reach `/admin/content` after either:
+
+- signing in with a Supabase account whose `member_roles.role` is `admin`
+- using the password-only admin login on `/login`
+
+The password-only path requires `ADMIN_PASSWORD` in the deployment environment. `ADMIN_SESSION_SECRET` can be set separately, but the app falls back to signing the admin cookie with `ADMIN_PASSWORD` when no separate secret is configured.
+
+The admin content screen supports:
+
+- listing published and archived content
+- editing title, slug, destination menu, author, category, tags, body, excerpt, and `replyTo`
+- deleting content through an archived remote tombstone in production
+- local development writes to the matching file under `content/`
+
+## Relationships and discovery
+
+Posts with `replyTo` metadata are treated as long-form replies. The parent post renders those linked posts in its comments area, and the recent-posts rail shows connected child posts under the parent so topic dependencies are visible at a glance.
+
+Hashtags are clickable on cards, detail pages, and the left sidebar. Tag links use `?tag=...` and filter the current content listing.
+
 Short comments also prefer Supabase. If Supabase is unavailable in a Vercel deployment, the local fallback writes to `/tmp` so the API does not fail on the read-only function bundle, but that fallback is temporary and not durable across cold starts or deployments.
 
 Link draft generation uses `POST /api/link-drafts`. The route fetches source metadata server-side, then calls DeepSeek with `deepseek-v4-pro` to return JSON containing `title`, `category`, `tags`, and `markdown`. Configure `DEEPSEEK_API_KEY` as a server-only environment variable in local development and Vercel Production before enabling the feature. Do not prefix it with `NEXT_PUBLIC_`.

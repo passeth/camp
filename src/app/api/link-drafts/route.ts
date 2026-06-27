@@ -16,7 +16,7 @@ const draftSchema = z.object({
 });
 
 type SourceSummary = {
-  readonly kind: "github" | "youtube" | "web";
+  readonly kind: "github" | "youtube" | "x" | "web";
   readonly url: string;
   readonly title?: string;
   readonly description?: string;
@@ -82,6 +82,10 @@ function githubRepoParts(url: URL) {
   const [owner, repo] = url.pathname.split("/").filter(Boolean);
   if (!owner || !repo) return undefined;
   return { owner, repo: repo.replace(/\.git$/i, "") };
+}
+
+function isXUrl(url: URL) {
+  return ["x.com", "www.x.com", "twitter.com", "www.twitter.com"].includes(url.hostname);
 }
 
 async function fetchJson<T>(url: string, headers?: HeadersInit) {
@@ -189,6 +193,31 @@ async function youtubeSource(url: URL): Promise<SourceSummary | null> {
   };
 }
 
+async function xSource(url: URL): Promise<SourceSummary | null> {
+  if (!isXUrl(url)) return null;
+  const parts = url.pathname.split("/").filter(Boolean);
+  const author = parts[0];
+  return {
+    kind: "x",
+    url: url.toString(),
+    title: author ? `X post by @${author}` : "X post",
+    author,
+    description: "X 링크입니다. 원문을 열어 맥락을 확인할 수 있도록 바로가기 중심으로 정리합니다.",
+    text: [
+      author ? `Author: @${author}` : undefined,
+      `URL: ${url.toString()}`,
+      "Content: not available through this link-only flow.",
+    ].filter(Boolean).join("\n"),
+  };
+}
+
+function embedDirectiveForSource(source: SourceSummary) {
+  const label = (source.title ?? source.url).replace(/[\]\n\r]/g, " ").trim();
+  if (source.kind === "youtube") return `::camp-youtube[${label}](${source.url})`;
+  if (source.kind === "github" || source.kind === "x") return `::camp-link[${label}](${source.url})`;
+  return "";
+}
+
 async function webSource(url: URL): Promise<SourceSummary> {
   const html = await fetchText(url.toString());
   const title = htmlTitle(html);
@@ -274,10 +303,12 @@ export async function POST(request: NextRequest) {
     }
 
     const url = normalizedUrl(parsed.data.url);
-    const source = await githubSource(url) ?? await youtubeSource(url) ?? await webSource(url);
+    const source = await githubSource(url) ?? await youtubeSource(url) ?? await xSource(url) ?? await webSource(url);
     const draft = await summarizeSource(source);
+    const embedDirective = embedDirectiveForSource(source);
+    const markdown = embedDirective ? `${embedDirective}\n\n${draft.markdown}` : draft.markdown;
 
-    return NextResponse.json({ draft, source: { kind: source.kind, url: source.url, title: source.title } });
+    return NextResponse.json({ draft: { ...draft, markdown }, source: { kind: source.kind, url: source.url, title: source.title } });
   } catch (error) {
     console.error(error);
     const message = error instanceof Error ? error.message : "초안을 만들지 못했습니다.";

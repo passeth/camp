@@ -1,5 +1,5 @@
 import { SubmitButton } from "@/components/submit-button";
-import { signInWithEmail, signInWithPassword } from "./actions";
+import { signInAsAdmin, signInWithEmail, signInWithPassword } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +39,17 @@ export default async function LoginPage({ searchParams }: PageProps) {
           <input className="mt-2" name="email" type="email" required placeholder="you@example.com" />
         </label>
         <SubmitButton pendingText="링크 보내는 중...">로그인 링크 받기</SubmitButton>
+      </form>
+      <form action={signInAsAdmin} className="mt-4 space-y-4 rounded-lg border border-[#e7e5dc] bg-white p-6">
+        <div>
+          <p className="text-sm font-semibold text-[#171717]">관리자 로그인</p>
+          <p className="mt-1 text-sm text-[#6d7280]">운영자 비밀번호로 게시글 수정과 삭제 화면에 들어갑니다.</p>
+        </div>
+        <label className="block text-sm font-medium text-[#374151]">
+          관리자 비밀번호
+          <input className="mt-2" name="adminPassword" type="password" required placeholder="관리자 비밀번호" />
+        </label>
+        <SubmitButton pendingText="관리자 로그인 중...">관리자 로그인</SubmitButton>
       </form>
     </div>
   );

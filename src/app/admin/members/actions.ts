@@ -18,7 +18,7 @@ export async function updateMemberRole(formData: FormData) {
     .from("member_roles")
     .update({
       role,
-      approved_by: role === "pending" ? null : context.user.id,
+      approved_by: role === "pending" ? null : context?.user.id ?? null,
       approved_at: role === "pending" ? null : new Date().toISOString(),
     })
     .eq("user_id", userId);

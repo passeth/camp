@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { hasAdminCookie } from "@/lib/admin-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type MemberRole = "pending" | "member" | "admin";
@@ -44,8 +45,16 @@ export async function requireMember() {
 }
 
 export async function requireAdmin() {
+  if (await hasAdminCookie()) return null;
+
   const context = await getAuthContext();
   if (!context) redirect("/login");
   if (context.role !== "admin") redirect("/dashboard?status=admin-required");
   return context;
+}
+
+export async function canManageContent() {
+  if (await hasAdminCookie()) return true;
+  const context = await getAuthContext();
+  return context?.role === "admin";
 }

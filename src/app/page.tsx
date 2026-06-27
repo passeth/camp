@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { ContentGrid } from "@/components/content-grid";
-import { getLatestEntriesAsync } from "@/lib/content";
+import { getAllContentEntriesAsync } from "@/lib/content";
+import { filterEntriesByTag } from "@/lib/tags";
 
-export default async function HomePage() {
-  const latest = await getLatestEntriesAsync(6);
+type PageProps = { searchParams: Promise<{ tag?: string }> };
+
+export default async function HomePage({ searchParams }: PageProps) {
+  const { tag } = await searchParams;
+  const latest = filterEntriesByTag(await getAllContentEntriesAsync(), tag).slice(0, 6);
 
   return (
     <div>
@@ -11,7 +15,7 @@ export default async function HomePage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Camp study archive</p>
-            <h1 className="mt-2 text-3xl font-semibold leading-tight tracking-[-0.035em] text-[var(--foreground)] sm:text-4xl">최근 게시글</h1>
+            <h1 className="mt-2 text-3xl font-semibold leading-tight tracking-[-0.035em] text-[var(--foreground)] sm:text-4xl">{tag ? `#${tag}` : "최근 게시글"}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">스터디 기록, 자료, 질문을 게시글과 댓글로 이어가는 커뮤니티 피드입니다.</p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2 text-xs font-semibold text-[var(--muted)]">

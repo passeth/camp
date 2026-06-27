@@ -64,10 +64,10 @@ const timeoutFetch: typeof fetch = (input, init) => fetch(input, {
 });
 
 function hasRemoteContentEnv({ requireWrite = false }: { requireWrite?: boolean } = {}) {
+  void requireWrite;
   return Boolean(
     serverEnv("NEXT_PUBLIC_SUPABASE_URL")
-    && serverEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
-    && (!requireWrite || serverEnv("SUPABASE_SERVICE_ROLE_KEY")),
+    && serverEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
   );
 }
 
@@ -82,6 +82,10 @@ function createAnonClient() {
   );
 }
 
+function hasServiceRoleKey() {
+  return Boolean(serverEnv("SUPABASE_SERVICE_ROLE_KEY"));
+}
+
 function createAdminClient() {
   return createSupabaseClient(
     requireServerEnv("NEXT_PUBLIC_SUPABASE_URL"),
@@ -91,6 +95,10 @@ function createAdminClient() {
       global: { fetch: timeoutFetch },
     },
   );
+}
+
+function createReadClient() {
+  return hasServiceRoleKey() ? createAdminClient() : createAnonClient();
 }
 
 function shortDate(value?: string | null) {
@@ -164,7 +172,8 @@ export function markRemoteContentUnavailable() {
 export async function getRemoteEntriesByType(type: ContentType, { includeUnpublished = false }: { includeUnpublished?: boolean } = {}) {
   if (!(await canUseRemoteContent())) return [];
 
-  const supabase = createAnonClient();
+  const canReadPrivateRows = hasServiceRoleKey();
+  const supabase = createReadClient();
   let query = supabase
     .from("content_index")
     .select("slug, type, title, status, visibility, author, member_slug, category, tags, published_at, created_at, updated_at, content_format, content, excerpt, parent_type, parent_slug")
@@ -172,7 +181,7 @@ export async function getRemoteEntriesByType(type: ContentType, { includeUnpubli
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
 
-  if (!includeUnpublished) {
+  if (!includeUnpublished && !canReadPrivateRows) {
     query = query.eq("status", "published").eq("visibility", "public");
   }
 
@@ -182,15 +191,13 @@ export async function getRemoteEntriesByType(type: ContentType, { includeUnpubli
     return [];
   }
 
-  return contentRowsSchema.parse(data ?? [])
-    .map(rowToEntry)
-    .filter((entry) => entry.content.trim().length > 0);
+  return contentRowsSchema.parse(data ?? []).map(rowToEntry);
 }
 
 export async function remoteContentExists(type: ContentType, slug: string) {
   if (!(await canUseRemoteContent({ requireWrite: true }))) return false;
 
-  const supabase = createAdminClient();
+  const supabase = createAnonClient();
   const { data, error } = await supabase
     .from("content_index")
     .select("id")
@@ -208,7 +215,7 @@ export async function createRemoteContent(input: RemoteContentInput) {
   }
 
   const now = new Date().toISOString();
-  const supabase = createAdminClient();
+  const supabase = createAnonClient();
   const { error } = await supabase
     .from("content_index")
     .insert({
@@ -228,6 +235,73 @@ export async function createRemoteContent(input: RemoteContentInput) {
       parent_type: input.replyTo?.type,
       parent_slug: input.replyTo?.slug,
     });
+
+  if (error) throw error;
+}
+
+export async function updateRemoteContent(type: ContentType, slug: string, input: RemoteContentInput) {
+  if (!(await canUseRemoteContent({ requireWrite: true }))) {
+    throw new Error("Remote content storage is not configured.");
+  }
+
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+
+  if (type !== input.type || slug !== input.slug) {
+    await deleteRemoteContent(type, slug);
+  }
+
+  const { error } = await admin
+    .from("content_index")
+    .upsert({
+      slug: input.slug,
+      type: input.type,
+      title: input.title,
+      status: "published",
+      visibility: "public",
+      author: input.author,
+      member_slug: input.memberSlug,
+      category: input.category,
+      tags: [...new Set(input.tags)],
+      content_format: "html",
+      content: input.html,
+      excerpt: input.excerpt,
+      parent_type: input.replyTo?.type,
+      parent_slug: input.replyTo?.slug,
+      published_at: now,
+      updated_at: now,
+    }, { onConflict: "type,slug" });
+
+  if (error) throw error;
+}
+
+export async function deleteRemoteContent(type: ContentType, slug: string) {
+  if (!(await canUseRemoteContent({ requireWrite: true }))) {
+    throw new Error("Remote content storage is not configured.");
+  }
+
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+  const { error } = await admin
+    .from("content_index")
+    .upsert({
+      slug,
+      type,
+      title: "Deleted",
+      status: "archived",
+      visibility: "public",
+      author: "Admin",
+      member_slug: "admin",
+      category: "deleted",
+      tags: [],
+      published_at: now,
+      content_format: "html",
+      content: "<p>Deleted</p>",
+      excerpt: "Deleted",
+      parent_type: null,
+      parent_slug: null,
+      updated_at: now,
+    }, { onConflict: "type,slug" });
 
   if (error) throw error;
 }

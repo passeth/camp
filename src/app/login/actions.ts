@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { clearAdminSession, createAdminSession } from "@/lib/admin-session";
 import { createClient } from "@/lib/supabase/server";
 
 
@@ -35,7 +36,20 @@ export async function signInWithEmail(formData: FormData) {
 }
 
 export async function signOut() {
+  await clearAdminSession();
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/");
+}
+
+export async function signInAsAdmin(formData: FormData) {
+  const password = String(formData.get("adminPassword") ?? "");
+  if (!password) redirect("/login?error=admin-password-required");
+
+  const result = await createAdminSession(password);
+  if (!result.ok) {
+    redirect(result.reason === "not-configured" ? "/login?error=admin-not-configured" : "/login?error=admin-password-failed");
+  }
+
+  redirect("/admin");
 }

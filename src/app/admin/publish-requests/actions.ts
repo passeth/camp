@@ -19,7 +19,7 @@ export async function updatePublishRequestStatus(formData: FormData) {
     .from("publish_requests")
     .update({
       status,
-      reviewer_id: context.user.id,
+      reviewer_id: context?.user.id ?? null,
       reviewer_note: reviewerNote,
       reviewed_at: new Date().toISOString(),
     })

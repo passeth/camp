@@ -118,7 +118,7 @@ function sortEntries(entries: readonly ContentEntry[]) {
   return [...entries].sort((a, b) => Date.parse(b.publishedAt ?? b.createdAt) - Date.parse(a.publishedAt ?? a.createdAt));
 }
 
-function mergeEntries(primary: readonly ContentEntry[], fallback: readonly ContentEntry[]) {
+function mergeEntries(primary: readonly ContentEntry[], fallback: readonly ContentEntry[], { includeUnpublished = false }: { includeUnpublished?: boolean } = {}) {
   const seen = new Set<string>();
   const merged: ContentEntry[] = [];
 
@@ -126,6 +126,7 @@ function mergeEntries(primary: readonly ContentEntry[], fallback: readonly Conte
     const key = `${entry.type}:${entry.slug}`;
     if (seen.has(key)) continue;
     seen.add(key);
+    if (!includeUnpublished && (entry.status !== "published" || entry.visibility !== "public" || entry.content.trim().length === 0)) continue;
     merged.push(entry);
   }
 
@@ -136,7 +137,7 @@ export async function getEntriesByTypeAsync(type: ContentType, options: { includ
   const [remoteEntries] = await Promise.all([
     getRemoteEntriesByType(type, options),
   ]);
-  return mergeEntries(remoteEntries, getEntriesByType(type, options));
+  return mergeEntries(remoteEntries, getEntriesByType(type, options), options);
 }
 
 export function getEntryByTypeAndSlug(type: ContentType, slug: string, options?: { includeUnpublished?: boolean }) {

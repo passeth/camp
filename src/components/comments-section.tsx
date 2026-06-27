@@ -164,8 +164,9 @@ export function CommentsSection({ contentType, contentSlug, replyPostHref, reply
           value={body}
           onChange={(event) => setBody(event.currentTarget.value)}
           maxLength={2000}
-          rows={4}
-          className="min-h-28 w-full resize-y rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm leading-6 text-[var(--foreground)] outline-none transition focus:border-[var(--brand)]"
+          rows={1}
+          style={{ height: "2.75rem", minHeight: "2.75rem" }}
+          className="w-full resize-none rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm leading-6 text-[var(--foreground)] outline-none transition focus:border-[var(--brand)]"
           placeholder="질문, 보충 자료, 다음 모임에서 다룰 내용을 남겨주세요."
         />
         <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px_auto]">

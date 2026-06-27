@@ -2,12 +2,16 @@ import { ContentGrid } from "@/components/content-grid";
 import { PageHero } from "@/components/page-hero";
 import { SectionHeader } from "@/components/section-header";
 import { getEntriesByTypeAsync } from "@/lib/content";
+import { filterEntriesByTag } from "@/lib/tags";
 
-export default async function StudyLogPage() {
-  const entries = await getEntriesByTypeAsync("study-log");
+type PageProps = { searchParams: Promise<{ tag?: string }> };
+
+export default async function StudyLogPage({ searchParams }: PageProps) {
+  const { tag } = await searchParams;
+  const entries = filterEntriesByTag(await getEntriesByTypeAsync("study-log"), tag);
   return (
     <div>
-      <PageHero eyebrow="Study Log" title="스터디 로그" description="모임에서 사용한 덱과 기록을 게시글처럼 모아 바로 열람합니다." showVisual={false} />
+      <PageHero eyebrow="Study Log" title={tag ? `#${tag}` : "스터디 로그"} description="모임에서 사용한 덱과 기록을 게시글처럼 모아 바로 열람합니다." showVisual={false} />
       <SectionHeader eyebrow="Meeting record" title="Session outcomes" description="스터디의 주제, 결정, 다음 액션을 나중에 다시 찾기 쉬운 형태로 남깁니다." />
       <ContentGrid entries={entries} emptyTitle="Study Log가 없습니다" emptyDescription="첫 스터디 로그를 작성하면 표시됩니다." showCardVisuals={false} />
     </div>

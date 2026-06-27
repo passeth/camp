@@ -34,6 +34,82 @@ function slugifyHeading(value: string) {
     .slice(0, 80);
 }
 
+function splitTableRow(value: string) {
+  const trimmed = value.trim().replace(/^\|/, "").replace(/\|$/, "");
+  return trimmed.split("|").map((cell) => cell.trim());
+}
+
+function isTableSeparator(value: string) {
+  const cells = splitTableRow(value);
+  return cells.length > 1 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+}
+
+function isTableRow(value: string) {
+  return value.trim().includes("|") && splitTableRow(value).length > 1;
+}
+
+function renderTable(rows: readonly string[]) {
+  const [head, _separator, ...body] = rows;
+  const headers = splitTableRow(head);
+  const bodyRows = body.map(splitTableRow);
+
+  return [
+    "<div class=\"table-wrap\"><table>",
+    `<thead><tr>${headers.map((cell) => `<th>${inlineMarkdown(cell)}</th>`).join("")}</tr></thead>`,
+    `<tbody>${bodyRows.map((row) => `<tr>${headers.map((_, index) => `<td>${inlineMarkdown(row[index] ?? "")}</td>`).join("")}</tr>`).join("")}</tbody>`,
+    "</table></div>",
+  ].join("");
+}
+
+function youtubeEmbedUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    const id = parsed.hostname === "youtu.be"
+      ? parsed.pathname.split("/").filter(Boolean)[0]
+      : parsed.hostname.endsWith("youtube.com")
+        ? parsed.searchParams.get("v") ?? parsed.pathname.match(/\/shorts\/([^/?#]+)/)?.[1]
+        : undefined;
+    return id ? `https://www.youtube.com/embed/${escapeAttribute(id)}` : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function renderEmbedBlock(kind: "youtube" | "link", label: string, href: string) {
+  const safeLabel = inlineMarkdown(label);
+  const safeHref = escapeAttribute(href);
+
+  if (kind === "youtube") {
+    const embedUrl = youtubeEmbedUrl(href);
+    if (embedUrl) {
+      return [
+        "<section class=\"embed-card embed-youtube\">",
+        `<iframe title="${escapeAttribute(label)}" src="${embedUrl}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`,
+        `<a href="${safeHref}" target="_blank" rel="noreferrer">${safeLabel}</a>`,
+        "</section>",
+      ].join("");
+    }
+  }
+
+  return [
+    "<section class=\"embed-card embed-link\">",
+    "<p class=\"embed-eyebrow\">바로가기</p>",
+    `<a href="${safeHref}" target="_blank" rel="noreferrer">${safeLabel}</a>`,
+    `<p class=\"embed-url\">${escapeHtml(href)}</p>`,
+    "</section>",
+  ].join("");
+}
+
+function parseEmbedDirective(value: string) {
+  const match = value.match(/^::camp-(youtube|link)\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
+  if (!match) return undefined;
+  return {
+    kind: match[1] as "youtube" | "link",
+    label: match[2],
+    href: match[3],
+  };
+}
+
 export function markdownToHtmlBody(markdown: string) {
   const lines = stripFrontmatter(markdown).split(/\r?\n/);
   const nodes: string[] = [];
@@ -65,7 +141,8 @@ export function markdownToHtmlBody(markdown: string) {
     codeLines = [];
   };
 
-  for (const rawLine of lines) {
+  for (let index = 0; index < lines.length; index += 1) {
+    const rawLine = lines[index];
     const line = rawLine.trimEnd();
     const trimmed = line.trim();
 
@@ -89,6 +166,28 @@ export function markdownToHtmlBody(markdown: string) {
     if (!trimmed) {
       flushParagraph();
       flushList();
+      continue;
+    }
+
+    const embed = parseEmbedDirective(trimmed);
+    if (embed) {
+      flushParagraph();
+      flushList();
+      nodes.push(renderEmbedBlock(embed.kind, embed.label, embed.href));
+      continue;
+    }
+
+    if (isTableRow(trimmed) && lines[index + 1] && isTableSeparator(lines[index + 1].trim())) {
+      const tableRows = [trimmed, lines[index + 1].trim()];
+      index += 2;
+      while (lines[index] && isTableRow(lines[index].trim())) {
+        tableRows.push(lines[index].trim());
+        index += 1;
+      }
+      index -= 1;
+      flushParagraph();
+      flushList();
+      nodes.push(renderTable(tableRows));
       continue;
     }
 
@@ -160,6 +259,17 @@ export function markdownToHtmlDocument(markdown: string, title: string) {
     ul, ol { margin: 0 0 1.25em 1.25em; padding: 0; color: #2f3744; }
     li + li { margin-top: 0.35em; }
     a { color: #1d6f8f; font-weight: 650; text-decoration-thickness: 0.08em; text-underline-offset: 0.18em; }
+    .table-wrap { margin: 1.4rem 0; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 0.8rem 0.9rem; text-align: left; vertical-align: top; font-size: 0.95rem; line-height: 1.6; }
+    th { background: var(--soft); color: var(--ink); font-weight: 750; }
+    tr:last-child td { border-bottom: 0; }
+    .embed-card { margin: 1.4rem 0; border: 1px solid var(--line); border-radius: 14px; background: var(--soft); padding: 1rem; }
+    .embed-youtube iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 10px; background: #111; }
+    .embed-youtube a { display: inline-block; margin-top: 0.75rem; }
+    .embed-link { display: grid; gap: 0.35rem; }
+    .embed-eyebrow { margin: 0; font-size: 0.75rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .embed-url { margin: 0; overflow-wrap: anywhere; font-size: 0.88rem; color: var(--muted); }
     blockquote { margin: 1.5em 0; border-left: 4px solid var(--ink); background: var(--soft); padding: 1em 1.2em; color: var(--muted); }
     pre { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: #111; color: #f8fafc; padding: 1rem; }
     code { border-radius: 5px; background: #f0eee7; padding: 0.15em 0.35em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; }
@@ -172,4 +282,27 @@ ${body}
   </main>
 </body>
 </html>`;
+}
+
+export function repairMarkdownTablesInHtml(html: string) {
+  return html.replace(/<p>([^<]*\|[^<]*-{3,}[^<]*\|[^<]*)<\/p>/g, (match, content: string) => {
+    const decoded = content
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, "\"")
+      .replace(/&#39;/g, "'");
+    const rows = decoded.includes("| |")
+      ? decoded.split(/\s+\|\s+\|/).map((row) => {
+        const trimmed = row.trim();
+        return `${trimmed.startsWith("|") ? "" : "| "}${trimmed}${trimmed.endsWith("|") ? "" : " |"}`;
+      })
+      : decoded
+        .split(/\s+(?=\|)/)
+        .map((row) => row.trim())
+        .filter(Boolean);
+    const separatorIndex = rows.findIndex(isTableSeparator);
+    if (separatorIndex !== 1 || rows.length < 3) return match;
+    return renderTable(rows);
+  });
 }
