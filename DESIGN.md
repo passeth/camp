@@ -122,8 +122,8 @@ All spacing derives from 4px.
 
 ### Wall Climb Item
 
-- **Structure**: two-part row with an external-link preview card and a shared-note summary. The preview card uses the source link's provided image metadata when available, with title, description, and host below the image.
-- **Spacing**: item padding uses `--space-4`; preview content uses `--space-4`.
+- **Structure**: two-part row with an external-link preview card and a shared-note summary. The preview card uses the source link's provided image metadata when available, but keeps text to compact source metadata so the shared note and AI summary appear only once in the row body.
+- **Spacing**: item padding uses `--space-4`; preview content uses `--space-3`.
 - **States**: preview card hover strengthens the border and opens the source link in a new tab.
 - **Usage**: 벽타기 link collection entries where the original link should stay one click away from the listing page while preserving the link's native preview image.
 

@@ -1,5 +1,4 @@
 import type { ContentEntry } from "@/lib/content";
-import { ExpandableText } from "@/components/expandable-text";
 
 function youtubeId(value?: string) {
   if (!value) return undefined;
@@ -51,7 +50,6 @@ function visualLabel(kind?: ContentEntry["sourceKind"]) {
 export function WallLinkPreview({ entry }: { readonly entry: ContentEntry }) {
   const href = entry.sourceUrl ?? entry.href;
   const label = entry.sourceTitle ?? entry.title;
-  const description = entry.summary ?? entry.excerpt;
   const host = hostLabel(entry.sourceUrl);
   const videoId = youtubeId(entry.sourceUrl);
   const imageSrc = entry.sourceImage
@@ -76,19 +74,13 @@ export function WallLinkPreview({ entry }: { readonly entry: ContentEntry }) {
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#8b93a3]">{kindLabel(entry.sourceKind)}</p>
           <div className="mt-6 border-l border-t border-[#4f8cff] pl-3 pt-3">
             <p className="text-xs uppercase tracking-[0.16em] text-[#8b93a3]">{visualLabel(entry.sourceKind)}</p>
-            <p className="mt-2 line-clamp-2 text-lg font-semibold leading-tight">{label}</p>
+            <p className="mt-2 truncate text-sm font-semibold leading-tight text-[#d8d8d8]">{host}</p>
           </div>
         </div>
       )}
-      <div className="p-4">
-        <p className="line-clamp-2 text-lg font-semibold leading-tight tracking-[-0.03em] text-white">{label}</p>
-        {description ? (
-          <ExpandableText
-            className="mt-3 text-sm leading-6 text-[#b8b8b8]"
-            text={description}
-          />
-        ) : null}
-        <p className="mt-3 truncate text-sm font-semibold text-[#54a3ff]">{host}</p>
+      <div className="space-y-1.5 p-3">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#b8b8b8]">{kindLabel(entry.sourceKind)}</p>
+        <p className="truncate text-xs font-medium leading-5 text-[#54a3ff]">{host}</p>
       </div>
     </a>
   );
