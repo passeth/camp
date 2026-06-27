@@ -11,7 +11,9 @@ Current behavior:
 
 - visitors choose the destination menu: `Study Log`, `Topics`, or `News Digest`
 - visitors upload a Markdown or HTML file
+- visitors can paste a GitHub or YouTube link and ask the server to generate a structured Korean Markdown draft
 - Markdown uploads are converted into a standalone HTML document on the server
+- generated link drafts can be reviewed in the write form and published directly without creating a local file first
 - when Supabase remote content storage is configured, the app writes the published HTML body into `content_index`
 - posts can also carry `replyTo` metadata, which links a long-form reply post back to its parent post and lets the parent render that reply alongside short comments
 - local development falls back to writing a published `.html` content file under the matching `content/` folder
@@ -23,6 +25,8 @@ This path is intentionally separate from the Obsidian plugin PR flow below.
 Production deployments must not rely on runtime writes to `content/`. Vercel Functions only provide temporary writable filesystem space, so deployed community uploads need persistent storage. Apply `supabase/migrations/0006_content_index_body.sql` before enabling immediate public uploads in production; it adds `content_format`, `content`, and `excerpt` to `content_index`. Apply `supabase/migrations/0007_content_index_reply_links.sql` as well before enabling post-as-reply links in production; it adds `parent_type` and `parent_slug`.
 
 Short comments also prefer Supabase. If Supabase is unavailable in a Vercel deployment, the local fallback writes to `/tmp` so the API does not fail on the read-only function bundle, but that fallback is temporary and not durable across cold starts or deployments.
+
+Link draft generation uses `POST /api/link-drafts`. The route fetches source metadata server-side, then calls DeepSeek with `deepseek-v4-pro` to return JSON containing `title`, `category`, `tags`, and `markdown`. Configure `DEEPSEEK_API_KEY` as a server-only environment variable in local development and Vercel Production before enabling the feature. Do not prefix it with `NEXT_PUBLIC_`.
 
 ## Readiness contract
 
