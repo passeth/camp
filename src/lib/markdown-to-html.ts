@@ -61,6 +61,51 @@ function renderTable(rows: readonly string[]) {
   ].join("");
 }
 
+function normalizeTableRow(value: string) {
+  const trimmed = value.trim();
+  return `${trimmed.startsWith("|") ? "" : "| "}${trimmed}${trimmed.endsWith("|") ? "" : " |"}`;
+}
+
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'");
+}
+
+function rowsFromCollapsedTable(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  const separatorMatch = normalized.match(/\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?/);
+  if (!separatorMatch || separatorMatch.index === undefined) return undefined;
+
+  const separator = normalizeTableRow(separatorMatch[0]);
+  const columnCount = splitTableRow(separator).length;
+  if (columnCount < 2) return undefined;
+
+  const header = normalizeTableRow(normalized.slice(0, separatorMatch.index));
+  if (splitTableRow(header).length !== columnCount) return undefined;
+
+  const body = normalized.slice(separatorMatch.index + separatorMatch[0].length);
+  const bodyCells = body
+    .replace(/^\|+/, "")
+    .replace(/\|+$/, "")
+    .split("|")
+    .map((cell) => cell.trim())
+    .filter(Boolean);
+
+  if (bodyCells.length < columnCount) return undefined;
+
+  const bodyRows: string[] = [];
+  for (let index = 0; index < bodyCells.length; index += columnCount) {
+    const cells = bodyCells.slice(index, index + columnCount);
+    if (cells.length === columnCount) bodyRows.push(`| ${cells.join(" | ")} |`);
+  }
+
+  return bodyRows.length ? [header, separator, ...bodyRows] : undefined;
+}
+
 function youtubeEmbedUrl(url: string) {
   try {
     const parsed = new URL(url);
@@ -233,7 +278,7 @@ export function markdownToHtmlBody(markdown: string) {
   flushList();
   if (inCode || codeLines.length) flushCode();
 
-  return nodes.join("\n");
+  return repairMarkdownTablesInHtml(nodes.join("\n"));
 }
 
 export function markdownToHtmlDocument(markdown: string, title: string) {
@@ -286,23 +331,20 @@ ${body}
 
 export function repairMarkdownTablesInHtml(html: string) {
   return html.replace(/<p>([^<]*\|[^<]*-{3,}[^<]*\|[^<]*)<\/p>/g, (match, content: string) => {
-    const decoded = content
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, "\"")
-      .replace(/&#39;/g, "'");
+    const decoded = decodeHtmlEntities(content);
     const rows = decoded.includes("| |")
       ? decoded.split(/\s+\|\s+\|/).map((row) => {
         const trimmed = row.trim();
-        return `${trimmed.startsWith("|") ? "" : "| "}${trimmed}${trimmed.endsWith("|") ? "" : " |"}`;
+        return normalizeTableRow(trimmed);
       })
       : decoded
         .split(/\s+(?=\|)/)
         .map((row) => row.trim())
         .filter(Boolean);
     const separatorIndex = rows.findIndex(isTableSeparator);
-    if (separatorIndex !== 1 || rows.length < 3) return match;
-    return renderTable(rows);
+    if (separatorIndex === 1 && rows.length >= 3) return renderTable(rows);
+
+    const collapsedRows = rowsFromCollapsedTable(decoded);
+    return collapsedRows ? renderTable(collapsedRows) : match;
   });
 }
