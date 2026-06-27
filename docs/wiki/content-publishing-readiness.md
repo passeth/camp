@@ -12,11 +12,14 @@ Current behavior:
 - visitors choose the destination menu: `Study Log`, `Topics`, or `News Digest`
 - visitors upload a Markdown or HTML file
 - Markdown uploads are converted into a standalone HTML document on the server
-- the app writes a published `.html` content file under the matching `content/` folder
+- when Supabase remote content storage is configured, the app writes the published HTML body into `content_index`
+- local development falls back to writing a published `.html` content file under the matching `content/` folder
 - duplicate slugs are resolved with numeric suffixes such as `-2` and `-3`
 - the user is redirected directly to the public post URL
 
 This path is intentionally separate from the Obsidian plugin PR flow below.
+
+Production deployments must not rely on runtime writes to `content/`. Vercel Functions only provide temporary writable filesystem space, so deployed community uploads need persistent storage. Apply `supabase/migrations/0006_content_index_body.sql` before enabling immediate public uploads in production; it adds `content_format`, `content`, and `excerpt` to `content_index`.
 
 ## Readiness contract
 

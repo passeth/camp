@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { CommunitySidebar } from "@/components/community-sidebar";
 import { RecentPostsRail } from "@/components/recent-posts-rail";
 import { SiteHeader } from "@/components/site-header";
-import { getLatestEntries } from "@/lib/content";
+import { getLatestEntriesAsync } from "@/lib/content";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,8 +11,10 @@ export const metadata: Metadata = {
   description: "AI-powered study magazine, wiki, and archive for study members.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const recentEntries = getLatestEntries(5);
+export const dynamic = "force-dynamic";
+
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const recentEntries = await getLatestEntriesAsync(5);
 
   return (
     <html lang="ko" suppressHydrationWarning>

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { ContentGrid } from "@/components/content-grid";
-import { getLatestEntries } from "@/lib/content";
+import { getLatestEntriesAsync } from "@/lib/content";
 
-export default function HomePage() {
-  const latest = getLatestEntries(6);
+export default async function HomePage() {
+  const latest = await getLatestEntriesAsync(6);
 
   return (
     <div>

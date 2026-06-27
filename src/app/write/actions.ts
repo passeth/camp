@@ -5,6 +5,7 @@ import path from "node:path";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { markdownToHtmlDocument } from "@/lib/markdown-to-html";
+import { canUseRemoteContent, createRemoteContent, remoteContentExists } from "@/lib/remote-content-store";
 
 const publishMenus = ["press", "topic", "study-log"] as const;
 type PublishMenu = (typeof publishMenus)[number];
@@ -83,7 +84,7 @@ async function uniqueSlug(type: PublishMenu, slug: string) {
   let candidate = slug;
   let suffix = 2;
 
-  while (await pathExists(contentPath(type, candidate))) {
+  while (await pathExists(contentPath(type, candidate)) || await remoteContentExists(type, candidate)) {
     candidate = `${slug}-${suffix}`;
     suffix += 1;
   }
@@ -185,6 +186,27 @@ export async function createPublishPost(formData: FormData) {
 
   const submission = finalParsed.data;
   const tags = parsed.data.tags?.split(",").map((tag) => tag.trim()).filter(Boolean) ?? [];
+  const excerpt = excerptFromSource(submission.markdown);
+
+  if (await canUseRemoteContent({ requireWrite: true })) {
+    try {
+      await createRemoteContent({
+        title: submission.title,
+        slug: submission.slug,
+        type: submission.type,
+        author: submission.authorName,
+        memberSlug: slugify(submission.authorName),
+        category: submission.category,
+        tags,
+        excerpt,
+        html: submission.html,
+      });
+    } catch (error) {
+      console.error(error);
+      if (process.env.VERCEL) redirect("/write?error=remote-publish");
+    }
+    if (process.env.VERCEL) redirect(hrefForType(submission.type, submission.slug));
+  }
 
   const filePath = contentPath(submission.type, submission.slug);
   await mkdir(path.dirname(filePath), { recursive: true });
@@ -197,7 +219,7 @@ export async function createPublishPost(formData: FormData) {
       authorName: submission.authorName,
       category: submission.category,
       tags,
-      excerpt: excerptFromSource(submission.markdown),
+      excerpt,
       html: submission.html,
     }),
     "utf8",

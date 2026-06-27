@@ -1,10 +1,10 @@
 import { ContentGrid } from "@/components/content-grid";
 import { PageHero } from "@/components/page-hero";
 import { SectionHeader } from "@/components/section-header";
-import { getEntriesByType } from "@/lib/content";
+import { getEntriesByTypeAsync } from "@/lib/content";
 
-export default function TeachPage() {
-  const entries = getEntriesByType("teach");
+export default async function TeachPage() {
+  const entries = await getEntriesByTypeAsync("teach");
   return (
     <div>
       <PageHero eyebrow="Teach Pages" title="AI가 생성하는 학습 페이지" description="주제별 설명, 예제, 연습 문제를 하나의 학습 페이지로 저장하는 공간입니다. MVP에서는 Markdown으로 시작합니다." />

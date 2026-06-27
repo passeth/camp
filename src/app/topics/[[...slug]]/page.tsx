@@ -3,7 +3,7 @@ import { ContentGrid } from "@/components/content-grid";
 import { PageHero } from "@/components/page-hero";
 import { PostLayout } from "@/components/post-layout";
 import { SectionHeader } from "@/components/section-header";
-import { getEntriesByType, getEntryByTypeAndSlug, getTopicSubtree } from "@/lib/content";
+import { getEntriesByType, getEntryByTypeAndSlugAsync, getTopicSubtreeAsync } from "@/lib/content";
 
 type PageProps = { params: Promise<{ slug?: string[] }> };
 
@@ -17,8 +17,10 @@ export function generateStaticParams() {
 export default async function TopicsPage({ params }: PageProps) {
   const { slug = [] } = await params;
   const slugPath = slug.join("/");
-  const entry = slugPath ? getEntryByTypeAndSlug("topic", slugPath) : null;
-  const subtree = getTopicSubtree(slug);
+  const [entry, subtree] = await Promise.all([
+    slugPath ? getEntryByTypeAndSlugAsync("topic", slugPath) : Promise.resolve(null),
+    getTopicSubtreeAsync(slug),
+  ]);
 
   if (slugPath && !entry && subtree.length === 0) notFound();
 

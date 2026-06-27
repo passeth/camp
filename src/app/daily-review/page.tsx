@@ -1,10 +1,10 @@
 import { ContentGrid } from "@/components/content-grid";
 import { PageHero } from "@/components/page-hero";
 import { SectionHeader } from "@/components/section-header";
-import { getEntriesByType } from "@/lib/content";
+import { getEntriesByTypeAsync } from "@/lib/content";
 
-export default function DailyReviewPage() {
-  const entries = getEntriesByType("daily-review");
+export default async function DailyReviewPage() {
+  const entries = await getEntriesByTypeAsync("daily-review");
   return (
     <div>
       <PageHero eyebrow="Daily Review" title="매일의 대화를 학습 기록으로" description="메신저와 회의에서 나온 흐름을 하루 단위로 요약하고, 나중에 Hermes가 자동 정리할 수 있도록 준비합니다." />

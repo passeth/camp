@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 import { z } from "zod";
+import { getRemoteEntriesByType } from "@/lib/remote-content-store";
 
 export const contentTypes = ["press", "topic", "daily-review", "study-log", "teach"] as const;
 export type ContentType = (typeof contentTypes)[number];
@@ -109,12 +110,51 @@ export function getEntriesByType(type: ContentType, { includeUnpublished = false
     .sort((a, b) => Date.parse(b.publishedAt ?? b.createdAt) - Date.parse(a.publishedAt ?? a.createdAt));
 }
 
+function sortEntries(entries: readonly ContentEntry[]) {
+  return [...entries].sort((a, b) => Date.parse(b.publishedAt ?? b.createdAt) - Date.parse(a.publishedAt ?? a.createdAt));
+}
+
+function mergeEntries(primary: readonly ContentEntry[], fallback: readonly ContentEntry[]) {
+  const seen = new Set<string>();
+  const merged: ContentEntry[] = [];
+
+  for (const entry of [...primary, ...fallback]) {
+    const key = `${entry.type}:${entry.slug}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(entry);
+  }
+
+  return sortEntries(merged);
+}
+
+export async function getEntriesByTypeAsync(type: ContentType, options: { includeUnpublished?: boolean } = {}) {
+  const [remoteEntries] = await Promise.all([
+    getRemoteEntriesByType(type, options),
+  ]);
+  return mergeEntries(remoteEntries, getEntriesByType(type, options));
+}
+
 export function getEntryByTypeAndSlug(type: ContentType, slug: string, options?: { includeUnpublished?: boolean }) {
   return getEntriesByType(type, options).find((entry) => entry.slug === slug);
 }
 
+export async function getEntryByTypeAndSlugAsync(type: ContentType, slug: string, options?: { includeUnpublished?: boolean }) {
+  const entries = await getEntriesByTypeAsync(type, options);
+  return entries.find((entry) => entry.slug === slug);
+}
+
 export function getLatestEntries(limit = 6) {
   return getAllContentEntries().slice(0, limit);
+}
+
+export async function getAllContentEntriesAsync({ includeUnpublished = false }: { includeUnpublished?: boolean } = {}) {
+  const entriesByType = await Promise.all(contentTypes.map((type) => getEntriesByTypeAsync(type, { includeUnpublished })));
+  return sortEntries(entriesByType.flat());
+}
+
+export async function getLatestEntriesAsync(limit = 6) {
+  return (await getAllContentEntriesAsync()).slice(0, limit);
 }
 
 export function getEntriesByMember(memberSlug: string) {
@@ -124,6 +164,14 @@ export function getEntriesByMember(memberSlug: string) {
 export function getTopicSubtree(segments: string[] = []) {
   const prefix = segments.join("/");
   return getEntriesByType("topic").filter((entry) => {
+    const entryPath = entry.pathSegments.join("/");
+    return !prefix || entryPath === prefix || entryPath.startsWith(`${prefix}/`);
+  });
+}
+
+export async function getTopicSubtreeAsync(segments: string[] = []) {
+  const prefix = segments.join("/");
+  return (await getEntriesByTypeAsync("topic")).filter((entry) => {
     const entryPath = entry.pathSegments.join("/");
     return !prefix || entryPath === prefix || entryPath.startsWith(`${prefix}/`);
   });

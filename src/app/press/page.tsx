@@ -1,10 +1,10 @@
 import { ContentGrid } from "@/components/content-grid";
 import { PageHero } from "@/components/page-hero";
 import { SectionHeader } from "@/components/section-header";
-import { getEntriesByType } from "@/lib/content";
+import { getEntriesByTypeAsync } from "@/lib/content";
 
-export default function PressPage() {
-  const entries = getEntriesByType("press");
+export default async function PressPage() {
+  const entries = await getEntriesByTypeAsync("press");
   return (
     <div>
       <PageHero eyebrow="News Digest" title="뉴스 다이제스트" description="스터디와 연결된 소식, 자료, 외부 흐름을 짧게 정리해 모읍니다." showVisual={false} />
