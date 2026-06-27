@@ -1,4 +1,5 @@
 import { EmptyState } from "@/components/empty-state";
+import { HtmlContentFrame } from "@/components/html-content-frame";
 import { MarkdownView } from "@/components/markdown-view";
 import { StatusPill } from "@/components/status-pill";
 import { SubmitButton } from "@/components/submit-button";
@@ -13,7 +14,7 @@ export default async function AdminPublishRequestsPage() {
   const supabase = await createClient();
   const { data: requests } = await supabase
     .from("publish_requests")
-    .select("id, title, slug, type, category, tags, markdown, status, created_at, profiles:user_id(display_name, slug)")
+    .select("id, title, slug, type, category, tags, markdown, html, content_format, file_name, author_name, author_email, status, created_at, profiles:user_id(display_name, slug)")
     .order("created_at", { ascending: false });
 
   return (
@@ -30,7 +31,7 @@ export default async function AdminPublishRequestsPage() {
               <div>
                 <div className="mb-3 flex flex-wrap gap-2"><StatusPill>{request.status}</StatusPill><StatusPill>{request.type}</StatusPill></div>
                 <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[#111827]">{request.title}</h2>
-                <p className="mt-2 text-sm text-[#6b7280]">/{request.slug} · {profile?.display_name ?? "unknown"}</p>
+                <p className="mt-2 text-sm text-[#6b7280]">/{request.slug} · {profile?.display_name ?? request.author_name ?? "unknown"}{request.file_name ? ` · ${request.file_name}` : ""}</p>
               </div>
               <form action={updatePublishRequestStatus} className="grid gap-2 sm:min-w-72">
                 <input type="hidden" name="id" value={request.id} />
@@ -39,7 +40,7 @@ export default async function AdminPublishRequestsPage() {
                 <SubmitButton pendingText="저장 중...">상태 저장</SubmitButton>
               </form>
             </div>
-            <MarkdownView content={request.markdown} />
+            {request.content_format === "html" && request.html ? <HtmlContentFrame html={request.html} title={request.title} /> : <MarkdownView content={request.markdown} />}
           </section>
         );
       }) : <EmptyState title="게시 요청이 없습니다" description="멤버가 /write에서 제출하면 이곳에 표시됩니다." />}

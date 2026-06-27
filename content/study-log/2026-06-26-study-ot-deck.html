@@ -1,0 +1,614 @@
+---
+title: "사생결단 복습 스터디 OT 덱"
+slug: "2026-06-26-study-ot-deck"
+type: "study-log"
+contentFormat: "html"
+status: "published"
+visibility: "public"
+author: "Camp Editorial"
+memberSlug: "camp-editorial"
+category: "deck"
+tags: ["ai-study", "ot", "deck", "review-study"]
+createdAt: "2026-06-26"
+publishedAt: "2026-06-26"
+excerpt: "2026년 6월 26일 첫 스터디 모임에서 사용한 사생결단 복습 스터디 OT HTML 덱입니다."
+---
+
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>사생결단 복습 스터디 OT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper:#EFE56A;
+  --paper-2:#F5ECA0;
+  --paper-3:#E8D85A;
+  --paper-extra:#FBE6A4;
+  --cream:#F8F1D6;
+  --ink:#1F3A8A;
+  --ink-soft:#2D4FB8;
+  --ink-deep:#0E1430;
+  --red:#C2342B;
+  --slide-w:1920;
+  --slide-h:1080;
+}
+* { box-sizing:border-box; }
+html, body {
+  margin:0;
+  height:100%;
+  background:#151515;
+  color:var(--ink);
+  overflow:hidden;
+  font-family:"Space Grotesk","Apple SD Gothic Neo","Noto Sans KR",Arial,sans-serif;
+}
+body::after {
+  content:"";
+  position:fixed;
+  left:50%;
+  bottom:18px;
+  transform:translateX(-50%);
+  width:220px;
+  height:4px;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--paper) calc(var(--progress, 0) * 1%), rgba(255,255,255,.18) 0);
+  z-index:20;
+}
+.viewport {
+  width:100vw;
+  height:100vh;
+  position:relative;
+  overflow:hidden;
+}
+.deck {
+  width:1920px;
+  height:1080px;
+  position:absolute;
+  left:0;
+  top:0;
+  transform-origin:top left;
+}
+.slide {
+  position:absolute;
+  inset:0;
+  display:none;
+  overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 20% 10%, rgba(255,255,255,.18), transparent 60%),
+    radial-gradient(140% 100% at 80% 95%, rgba(0,0,0,.05), transparent 55%),
+    var(--paper);
+}
+.slide.active { display:block; }
+.slide.cream {
+  background:
+    radial-gradient(120% 90% at 20% 10%, rgba(255,255,255,.5), transparent 60%),
+    var(--cream);
+}
+.slide.ink {
+  background:
+    radial-gradient(120% 90% at 20% 10%, rgba(255,255,255,.08), transparent 60%),
+    var(--ink);
+  color:var(--paper);
+}
+.slide::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:.35;
+  mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.45  0 0 0 0 0.2  0 0 0 .25 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+.slide.ink::before { opacity:.25; mix-blend-mode:screen; }
+.top {
+  position:absolute;
+  top:44px;
+  left:64px;
+  right:64px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-family:"DM Mono",ui-monospace,monospace;
+  font-size:18px;
+  font-weight:500;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  line-height:1;
+  z-index:3;
+}
+.top .lockup { display:flex; align-items:center; gap:14px; }
+.top svg { width:32px; height:16px; }
+.top .meta { display:flex; gap:36px; opacity:.72; }
+.footer {
+  position:absolute;
+  left:64px;
+  right:64px;
+  bottom:36px;
+  display:flex;
+  justify-content:space-between;
+  font-family:"DM Mono",ui-monospace,monospace;
+  font-size:15px;
+  font-weight:500;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  opacity:.65;
+  z-index:3;
+}
+.pin {
+  position:absolute;
+  color:var(--ink);
+  fill:none;
+  stroke:currentColor;
+  stroke-width:5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  z-index:4;
+}
+.slide.ink .pin { color:var(--paper); }
+.headline {
+  margin:0;
+  font-weight:700;
+  letter-spacing:-.04em;
+  line-height:1.05;
+}
+.label {
+  font-family:"DM Mono",ui-monospace,monospace;
+  font-size:16px;
+  font-weight:500;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  opacity:.68;
+}
+.scribble {
+  font-family:"Caveat","Marker Felt",cursive;
+  font-weight:700;
+  line-height:1.05;
+}
+.stamp {
+  position:absolute;
+  border:3px solid var(--red);
+  color:var(--red);
+  padding:8px 18px;
+  font-family:"DM Mono",monospace;
+  font-size:16px;
+  font-weight:500;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  transform:rotate(-4deg);
+  z-index:5;
+}
+.rule {
+  border-top:1.5px dashed rgba(31,58,138,.45);
+}
+.card {
+  position:absolute;
+  background:var(--cream);
+  border:1.5px solid var(--ink);
+  border-radius:4px;
+  box-shadow:5px 6px 0 0 var(--ink);
+  color:var(--ink);
+}
+.card.alt { background:var(--paper-2); }
+.card.extra { background:var(--paper-extra); transform:rotate(.6deg); }
+.card .pin { top:-25px; left:42px; width:132px; transform:rotate(-9deg); }
+.slide.ink .card { box-shadow:6px 7px 0 0 rgba(239,229,106,.28); }
+.cover .super {
+  position:absolute;
+  left:64px;
+  top:165px;
+  font-family:"DM Mono",monospace;
+  font-size:18px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+}
+.cover h1 {
+  position:absolute;
+  left:64px;
+  top:250px;
+  font-size:132px;
+  line-height:1.02;
+  max-width:900px;
+}
+.cover .hand {
+  position:absolute;
+  right:230px;
+  top:465px;
+  width:430px;
+  text-align:right;
+  font-size:46px;
+  transform:rotate(-3deg);
+}
+.cover .pin-a { top:150px; right:135px; width:470px; transform:rotate(-10deg); }
+.cover .pin-b { top:695px; right:330px; width:390px; transform:rotate(14deg); }
+.cover .stamp { right:372px; top:615px; }
+.cover .byline, .cover .date {
+  position:absolute;
+  bottom:210px;
+  font-family:"DM Mono",monospace;
+  font-size:16px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+.cover .byline { left:64px; }
+.cover .date { right:100px; text-align:right; }
+.agenda h2 {
+  position:absolute;
+  left:64px;
+  top:140px;
+  font-size:104px;
+}
+.agenda .list {
+  position:absolute;
+  left:64px;
+  right:64px;
+  top:470px;
+}
+.agenda .row {
+  height:118px;
+  display:grid;
+  grid-template-columns:120px 760px 220px 1fr;
+  align-items:center;
+  border-top:1.5px dashed rgba(31,58,138,.45);
+}
+.agenda .num {
+  font-family:"DM Mono",monospace;
+  font-size:22px;
+  letter-spacing:.14em;
+}
+.agenda .lab {
+  font-size:46px;
+  font-weight:600;
+  letter-spacing:-.02em;
+}
+.agenda .row .pin { position:relative; width:138px; transform:rotate(-4deg); }
+.agenda .row .meta {
+  font-family:"DM Mono",monospace;
+  font-size:15px;
+  letter-spacing:.14em;
+  text-align:right;
+  opacity:.68;
+}
+.direction h2 {
+  position:absolute;
+  left:64px;
+  top:145px;
+  width:1180px;
+  font-size:58px;
+  line-height:1.14;
+}
+.direction .lead {
+  position:absolute;
+  left:66px;
+  top:405px;
+  width:1370px;
+  font-size:26px;
+  line-height:1.45;
+}
+.direction .stamp { right:190px; top:330px; transform:rotate(5deg); }
+.direction .d-card {
+  top:610px;
+  width:560px;
+  height:290px;
+  padding:42px;
+}
+.direction .d-card:nth-of-type(1) { left:64px; }
+.direction .d-card:nth-of-type(2) { left:674px; background:var(--paper-2); }
+.direction .d-card:nth-of-type(3) { left:1284px; background:var(--paper-extra); transform:rotate(.6deg); }
+.direction .d-card h3 {
+  margin:28px 0 20px;
+  font-size:38px;
+  line-height:1.02;
+}
+.direction .d-card p {
+  margin:0;
+  font-size:20px;
+  line-height:1.38;
+}
+.direction .d-card .note {
+  position:absolute;
+  right:36px;
+  bottom:36px;
+  font-size:24px;
+  transform:rotate(-1.5deg);
+}
+.member .name {
+  position:absolute;
+  left:64px;
+  top:138px;
+  font-size:84px;
+}
+.member .role {
+  position:absolute;
+  left:68px;
+  top:260px;
+  width:650px;
+  font-size:28px;
+  line-height:1.25;
+}
+.member .stamp { left:536px; top:150px; }
+.member.ink .name, .member.ink .role { color:var(--paper); }
+.member.ink .role { opacity:.86; }
+.member .quote-card {
+  left:64px;
+  top:390px;
+  width:650px;
+  height:310px;
+  padding:72px 58px 38px;
+}
+.member .quote-card .quote {
+  margin:0;
+  font-size:42px;
+  font-weight:500;
+  line-height:1.18;
+  letter-spacing:-.02em;
+}
+.member .quote-card .source-note {
+  position:absolute;
+  left:58px;
+  bottom:35px;
+  font-size:32px;
+  transform:rotate(-1.5deg);
+}
+.member .point {
+  left:825px;
+  width:1030px;
+  height:190px;
+  padding:44px 48px 32px 142px;
+}
+.member .point.p1 { top:168px; }
+.member .point.p2 { top:406px; background:var(--paper-2); }
+.member .point.p3 { top:644px; background:var(--paper-extra); }
+.member .point .n {
+  position:absolute;
+  left:58px;
+  top:48px;
+  font-size:64px;
+}
+.member .point h3 {
+  margin:0 0 22px;
+  font-size:30px;
+  line-height:1;
+}
+.member .point p {
+  margin:0;
+  font-size:23px;
+  line-height:1.36;
+}
+.member .point .pin { width:96px; left:42px; }
+.member.ink .stamp { display:none; }
+.member.ink .quote-card { background:var(--paper-2); }
+.member.ink .ink-pin { position:absolute; top:145px; left:520px; width:320px; transform:rotate(-14deg); color:var(--paper); }
+.controls {
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:30;
+}
+.controls button {
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  pointer-events:auto;
+  border:1px solid rgba(239,229,106,.45);
+  background:rgba(0,0,0,.28);
+  color:var(--paper);
+  width:44px;
+  height:44px;
+  border-radius:4px;
+  font:500 13px "DM Mono",monospace;
+  opacity:.22;
+  transition:opacity .18s ease, background .18s ease;
+}
+.controls button:hover,
+.controls button:focus-visible {
+  opacity:1;
+  background:rgba(0,0,0,.48);
+}
+#prev { left:16px; }
+#next { right:16px; }
+@media print {
+  html, body { height:auto; overflow:visible; background:white; }
+  body::after, .controls { display:none; }
+  .viewport { display:block; width:auto; height:auto; }
+  .deck { transform:none !important; width:1920px; height:auto; }
+  .slide { position:relative; display:block; page-break-after:always; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="mark" viewBox="0 0 32 16">
+      <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="26" cy="8" r="5"/><path d="M21 8 H 6 M6 5 L 3 8 L 6 11"/>
+      </g>
+    </symbol>
+    <symbol id="pin" viewBox="0 0 360 110">
+      <g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M312 38 C 296 32, 290 50, 304 58 C 320 66, 340 60, 342 44 C 344 28, 322 18, 300 24"/>
+        <path d="M300 24 C 240 14, 140 14, 70 30"/>
+        <path d="M312 56 C 250 78, 150 82, 80 70"/>
+        <ellipse cx="58" cy="50" rx="24" ry="14"/>
+      </g>
+    </symbol>
+    <symbol id="pin-open" viewBox="0 0 360 130">
+      <g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M312 48 C 296 42, 290 60, 304 68 C 320 76, 340 70, 342 54 C 344 38, 322 28, 300 34"/>
+        <path d="M300 34 C 240 24, 140 24, 70 40"/>
+        <path d="M312 66 C 250 90, 150 96, 80 86 L 24 78 L 38 70 M24 78 L 38 88"/>
+        <ellipse cx="82" cy="32" rx="22" ry="12" transform="rotate(-18 82 32)"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="viewport">
+  <main class="deck" aria-live="polite">
+    <section class="slide cover active">
+      <div class="top"><span class="lockup"><svg><use href="#mark"/></svg> Bootcamp Study</span><span class="meta"><span>First Meet</span><span>01 / 11</span></span></div>
+      <svg class="pin pin-a"><use href="#pin"/></svg>
+      <svg class="pin pin-b"><use href="#pin-open"/></svg>
+      <div class="super">A field note · vol. I</div>
+      <h1 class="headline">사생결단<br>복습<br>스터디</h1>
+      <div class="hand scribble">For: 오늘 첫 모임<br>Two prompts. One hour.</div>
+      <div class="stamp">Review Club</div>
+      <div class="byline">Presented for 13 members</div>
+      <div class="date">2026.06.26 · 19:00</div>
+      <div class="footer"><span>사생결단 복습 스터디</span><span>01 / 11</span></div>
+    </section>
+
+    <section class="slide agenda">
+      <div class="top"><span class="lockup"><svg><use href="#mark"/></svg> Agenda</span><span class="meta"><span>OT Flow</span><span>02 / 11</span></span></div>
+      <h2 class="headline">오늘<br>다룰 것</h2>
+      <div class="list">
+        <div class="row"><span class="num">01</span><span class="lab">오프닝</span><svg class="pin"><use href="#pin"/></svg><span class="meta">왜 모였는지, 오늘의 기대를 맞춥니다.</span></div>
+        <div class="row"><span class="num">02</span><span class="lab">스터디의 방향</span><svg class="pin"><use href="#pin"/></svg><span class="meta">4회짜리 자발적 복습 모임의 범위와 태도</span></div>
+        <div class="row"><span class="num">03</span><span class="lab">멤버 소개내용 리뷰</span><svg class="pin"><use href="#pin-open"/></svg><span class="meta">대화 속 참여 목적, 사용 사례, 막힌 지점</span></div>
+        <div class="row"><span class="num">04</span><span class="lab">오늘의 진행</span><svg class="pin"><use href="#pin"/></svg><span class="meta">각자 3분 소개 후 사용 케이스 발표와 QA</span></div>
+      </div>
+      <div class="footer"><span>사생결단 복습 스터디</span><span>02 / 11</span></div>
+    </section>
+
+    <section class="slide cream direction">
+      <div class="top"><span class="lockup"><svg><use href="#mark"/></svg> Study Direction</span><span class="meta"><span>1H × 4</span><span>03 / 11</span></span></div>
+      <h2 class="headline">새 정보를 더 쌓기보다,<br>이미 배운 것을 각자의 현장에서<br>점검하고 적용하는 모임</h2>
+      <p class="lead">많은 학습거리가 쏟아지는 지금, 놓친 부분과 더 깊이 이해하고 싶은 지점, 적용하며 느낀 점을 공유합니다. 누가 교육하는 자리가 아니라 서로에게 동기부여와 도움을 주는 짧은 실전 복습 루틴입니다.</p>
+      <div class="stamp">No Overload</div>
+      <article class="card d-card"><svg class="pin"><use href="#pin"/></svg><div class="label">Rule · 01</div><h3>진행 리듬</h3><p>사용 케이스 발표 + QA 30분. 부트캠프에서 배운 내용 중 1-2개 토픽을 골라 각자의 질문과 답을 찾습니다.</p><div class="note scribble">이번 주는 작게, 선명하게.</div></article>
+      <article class="card d-card"><svg class="pin"><use href="#pin"/></svg><div class="label">Rule · 02</div><h3>공유 태도</h3><p>놓친 부분, 더 심화해 이해하고 싶은 부분, 실제 적용에서 느낀 점을 솔직하게 나눕니다.</p><div class="note scribble">질문이 재료입니다.</div></article>
+      <article class="card d-card"><svg class="pin"><use href="#pin-open"/></svg><div class="label">Rule · 03</div><h3>범위 원칙</h3><p>자발적으로 1시간씩 4회 진행되는 모임입니다. 새 정보 확장보다 알고 있던 것을 점검하고 적용합니다.</p><div class="note scribble">가볍지만 흐리지 않게.</div></article>
+      <div class="footer"><span>사생결단 복습 스터디</span><span>03 / 11</span></div>
+    </section>
+
+    <section class="slide member">
+      <div class="top"><span class="lockup"><svg><use href="#mark"/></svg> Member Review</span><span class="meta"><span>6/15 · 6/16</span><span>04 / 11</span></span></div>
+      <h2 class="name headline">엄유진</h2><p class="role">운영·일정 관리 / 사고 파트너로서의 AI</p><div class="stamp">From Chat</div>
+      <article class="card quote-card"><svg class="pin"><use href="#pin"/></svg><p class="quote">“거창한 결과물보다,<br>서로의 고민과 사용 경험을<br>편하게 나누는 것”</p><div class="source-note scribble">대화에서 뽑은 핵심 문장</div></article>
+      <article class="card point p1"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">1</div><h3>현재 활용</h3><p>비즈니스 리서치와 의사결정의 사고 파트너로 AI를 활용</p></article>
+      <article class="card point p2"><svg class="pin"><use href="#pin-open"/></svg><div class="n scribble">2</div><h3>참여 목적</h3><p>다른 멤버들이 실제로 AI를 어떻게 쓰는지 알고 싶음</p></article>
+      <article class="card point p3"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">3</div><h3>성공 기준</h3><p>기술·사업 관점이 열리는 편안한 경험 공유의 장</p></article>
+      <div class="footer"><span>사생결단 복습 스터디</span><span>04 / 11</span></div>
+    </section>
+
+    <section class="slide member">
+      <div class="top"><span class="lockup"><svg><use href="#mark"/></svg> Member Review</span><span class="meta"><span>6/15 · 6/17</span><span>05 / 11</span></span></div>
+      <h2 class="name headline">지슬기</h2><p class="role">아카이브 / 화장품 제조 AX</p><div class="stamp">From Chat</div>
+      <article class="card quote-card"><svg class="pin"><use href="#pin-open"/></svg><p class="quote">“AI Driven을 가장 잘 해내는<br>화장품 제조사를 만들고<br>싶습니다”</p><div class="source-note scribble">대화에서 뽑은 핵심 문장</div></article>
+      <article class="card point p1"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">1</div><h3>개선 목표</h3><p>제조·생산·연구·세일즈의 암묵지를 시스템화</p></article>
+      <article class="card point p2"><svg class="pin"><use href="#pin-open"/></svg><div class="n scribble">2</div><h3>시도한 방식</h3><p>MES·CRM 데이터 통합, PIF 자동화, 국가별 규제 스크리닝</p></article>
+      <article class="card point p3"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">3</div><h3>궁금한 점</h3><p>RDB와 Vector data·메모리를 어떻게 설계해야 에이전트가 일할까</p></article>
+      <div class="footer"><span>사생결단 복습 스터디</span><span>05 / 11</span></div>
+    </section>
+
+    <section class="slide ink member">
+      <div class="top"><span class="lockup"><svg><use href="#mark"/></svg> Member Review</span><span class="meta"><span>6/15 · 6/23</span><span>06 / 11</span></span></div>
+      <h2 class="name headline">강유</h2><p class="role">실습 공유 리더 / 실패와 토론 문화</p><svg class="pin ink-pin"><use href="#pin"/></svg>
+      <article class="card quote-card"><svg class="pin"><use href="#pin"/></svg><p class="quote">“무엇을 하다 어디서 막혔는지<br>공유하면 배움이 많습니다”</p><div class="source-note scribble">대화에서 뽑은 핵심 문장</div></article>
+      <article class="card point p1"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">1</div><h3>관심 주제</h3><p>GitHub, 데이터 관리, 스키마, API, MCP, CLI, 세션·프로젝트 관리</p></article>
+      <article class="card point p2"><svg class="pin"><use href="#pin-open"/></svg><div class="n scribble">2</div><h3>운영 제안</h3><p>짧은 발표와 질문을 여러 번 회전하며 부담 없이 사례 공유</p></article>
+      <article class="card point p3"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">3</div><h3>학습 태도</h3><p>많이 시도하고 많이 실패하는 용기 있는 한 주</p></article>
+      <div class="footer"><span>사생결단 복습 스터디</span><span>06 / 11</span></div>
+    </section>
+
+    <section class="slide member">
+      <div class="top"><span class="lockup"><svg><use href="#mark"/></svg> Member Review</span><span class="meta"><span>6/16</span><span>07 / 11</span></span></div>
+      <h2 class="name headline">김서윤</h2><p class="role">도메인 실사례 탐색</p><div class="stamp">From Chat</div>
+      <article class="card quote-card"><svg class="pin"><use href="#pin"/></svg><p class="quote">“새로운 툴보다,<br>각자의 도메인에 어떻게<br>활용하는지가 궁금했습니다”</p><div class="source-note scribble">대화에서 뽑은 핵심 문장</div></article>
+      <article class="card point p1"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">1</div><h3>참여 목적</h3><p>멤버들의 실제 적용 사례를 듣고 싶음</p></article>
+      <article class="card point p2"><svg class="pin"><use href="#pin-open"/></svg><div class="n scribble">2</div><h3>기대 방식</h3><p>사례를 듣고 질문하면서 서로 자극 받기</p></article>
+      <article class="card point p3"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">3</div><h3>핵심 키워드</h3><p>툴 소개보다 도메인 맥락, 적용 방식, 질문</p></article>
+      <div class="footer"><span>사생결단 복습 스터디</span><span>07 / 11</span></div>
+    </section>
+
+    <section class="slide member">
+      <div class="top"><span class="lockup"><svg><use href="#mark"/></svg> Member Review</span><span class="meta"><span>6/16</span><span>08 / 11</span></span></div>
+      <h2 class="name headline">김도훈</h2><p class="role">현실적 자동화 / 정보 정리</p><div class="stamp">From Chat</div>
+      <article class="card quote-card"><svg class="pin"><use href="#pin-open"/></svg><p class="quote">“모든 업무 자동화의 환상에서,<br>필요한 것을 조금씩 다듬는<br>방식으로 톤다운했습니다”</p><div class="source-note scribble">대화에서 뽑은 핵심 문장</div></article>
+      <article class="card point p1"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">1</div><h3>현재 활용</h3><p>리서치, 그때그때 필요한 업무 지시, 정보 정리</p></article>
+      <article class="card point p2"><svg class="pin"><use href="#pin-open"/></svg><div class="n scribble">2</div><h3>현재 고민</h3><p>스킬업·복습·개인 트레이닝을 어디서부터 해야 할지 어수선함</p></article>
+      <article class="card point p3"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">3</div><h3>기대 효과</h3><p>후기와 노하우를 통해 학습 루틴을 잡기</p></article>
+      <div class="footer"><span>사생결단 복습 스터디</span><span>08 / 11</span></div>
+    </section>
+
+    <section class="slide member">
+      <div class="top"><span class="lockup"><svg><use href="#mark"/></svg> Member Review</span><span class="meta"><span>6/16</span><span>09 / 11</span></span></div>
+      <h2 class="name headline">김문수</h2><p class="role">병원 마케팅 자동화 / 방향 재정렬</p><div class="stamp">From Chat</div>
+      <article class="card quote-card"><svg class="pin"><use href="#pin"/></svg><p class="quote">“쏟아지는 지식 속에서<br>복습하고 방향을 다시 잡을<br>기회가 필요합니다”</p><div class="source-note scribble">대화에서 뽑은 핵심 문장</div></article>
+      <article class="card point p1"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">1</div><h3>시작점</h3><p>병원 마케팅 자동화와 사업화 가능성을 보고 합류</p></article>
+      <article class="card point p2"><svg class="pin"><use href="#pin-open"/></svg><div class="n scribble">2</div><h3>현재 막힘</h3><p>많은 툴과 지식, 반복 수정으로 개발 방향이 흔들림</p></article>
+      <article class="card point p3"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">3</div><h3>참여 목적</h3><p>경험 공유와 피드백으로 복습하고 다시 제대로 시작하기</p></article>
+      <div class="footer"><span>사생결단 복습 스터디</span><span>09 / 11</span></div>
+    </section>
+
+    <section class="slide ink member">
+      <div class="top"><span class="lockup"><svg><use href="#mark"/></svg> Member Review</span><span class="meta"><span>6/16</span><span>10 / 11</span></span></div>
+      <h2 class="name headline">김경수</h2><p class="role">병원 데이터·매뉴얼·온톨로지</p><svg class="pin ink-pin"><use href="#pin"/></svg>
+      <article class="card quote-card"><svg class="pin"><use href="#pin"/></svg><p class="quote">“병원 데이터를 어떻게<br>수집·구조화·활용할지가<br>고민입니다”</p><div class="source-note scribble">대화에서 뽑은 핵심 문장</div></article>
+      <article class="card point p1"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">1</div><h3>시도한 방식</h3><p>카톡방 실수 기록을 수집해 실수 DB로 축적</p></article>
+      <article class="card point p2"><svg class="pin"><use href="#pin-open"/></svg><div class="n scribble">2</div><h3>확장 방향</h3><p>기존 매뉴얼과 실수 DB를 결합해 새로운 매뉴얼 생성</p></article>
+      <article class="card point p3"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">3</div><h3>궁금한 점</h3><p>회의록·상담·사건 기록까지 모아 치과 지식 시스템 만들기</p></article>
+      <div class="footer"><span>사생결단 복습 스터디</span><span>10 / 11</span></div>
+    </section>
+
+    <section class="slide member">
+      <div class="top"><span class="lockup"><svg><use href="#mark"/></svg> Member Review</span><span class="meta"><span>6/24</span><span>11 / 11</span></span></div>
+      <h2 class="name headline">이만성</h2><p class="role">콘텐츠·브랜딩·이커머스 자동화</p><div class="stamp">From Chat</div>
+      <article class="card quote-card"><svg class="pin"><use href="#pin-open"/></svg><p class="quote">공유한 업무 흐름과<br>자동화 구상,<br>기록 운영 이슈 중심으로 정리</p><div class="source-note scribble">핵심 문장 대신 주제 요약</div></article>
+      <article class="card point p1"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">1</div><h3>최근 작업</h3><p>유튜브·블로그·스레드 콘텐츠, 브랜딩 상품, 광고 소재, 강의자료</p></article>
+      <article class="card point p2"><svg class="pin"><use href="#pin-open"/></svg><div class="n scribble">2</div><h3>구상 자동화</h3><p>자사몰 소싱-등록-마케팅-발주-CS, 도매처 연동, 콘텐츠 개선</p></article>
+      <article class="card point p3"><svg class="pin"><use href="#pin"/></svg><div class="n scribble">3</div><h3>현재 고민</h3><p>옵시디언·Hermes 기록이 시스템에 잘 쓰이는지, 스킬 중복과 속도 저하</p></article>
+      <div class="footer"><span>사생결단 복습 스터디</span><span>11 / 11</span></div>
+    </section>
+  </main>
+</div>
+
+<div class="controls" aria-label="slide controls">
+  <button type="button" id="prev" aria-label="previous slide">←</button>
+  <button type="button" id="next" aria-label="next slide">→</button>
+</div>
+
+<script>
+const slides = [...document.querySelectorAll(".slide")];
+const deck = document.querySelector(".deck");
+let current = 0;
+
+function scaleDeck() {
+  const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+  const left = (window.innerWidth - 1920 * scale) / 2;
+  const top = (window.innerHeight - 1080 * scale) / 2;
+  deck.style.transform = `translate(${left}px, ${top}px) scale(${scale})`;
+}
+
+function show(index) {
+  current = Math.max(0, Math.min(slides.length - 1, index));
+  slides.forEach((slide, i) => slide.classList.toggle("active", i === current));
+  document.documentElement.style.setProperty("--progress", ((current + 1) / slides.length * 100).toFixed(2));
+  location.hash = String(current + 1).padStart(2, "0");
+}
+
+document.getElementById("prev").addEventListener("click", () => show(current - 1));
+document.getElementById("next").addEventListener("click", () => show(current + 1));
+window.addEventListener("resize", scaleDeck);
+window.addEventListener("keydown", (event) => {
+  if (["ArrowRight", "PageDown", " "].includes(event.key)) {
+    event.preventDefault();
+    show(current + 1);
+  }
+  if (["ArrowLeft", "PageUp", "Backspace"].includes(event.key)) {
+    event.preventDefault();
+    show(current - 1);
+  }
+  if (event.key === "Home") show(0);
+  if (event.key === "End") show(slides.length - 1);
+});
+
+const fromHash = Number(location.hash.replace("#", ""));
+scaleDeck();
+show(Number.isFinite(fromHash) && fromHash > 0 ? fromHash - 1 : 0);
+</script>
+</body>
+</html>

@@ -3,6 +3,21 @@
 Camp accepts content submissions from the Obsidian Camp Publisher plugin through `POST /api/content-submissions`.
 The endpoint creates a GitHub content PR, and GitHub Actions validates and merges trusted content-only PRs.
 
+## Web community publishing
+
+The `/write` page is the direct community publishing path. It does not use the Supabase `publish_requests` approval queue.
+
+Current behavior:
+
+- visitors choose the destination menu: `Study Log`, `Topics`, or `News Digest`
+- visitors upload a Markdown or HTML file
+- Markdown uploads are converted into a standalone HTML document on the server
+- the app writes a published `.html` content file under the matching `content/` folder
+- duplicate slugs are resolved with numeric suffixes such as `-2` and `-3`
+- the user is redirected directly to the public post URL
+
+This path is intentionally separate from the Obsidian plugin PR flow below.
+
 ## Readiness contract
 
 `GET /api/content-submissions` is public and returns the current publishing contract plus server readiness:

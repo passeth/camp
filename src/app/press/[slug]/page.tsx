@@ -11,7 +11,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
   const entry = getEntryByTypeAndSlug("press", slug);
-  return { title: entry ? `${entry.title} | Camp` : "Press | Camp" };
+  return { title: entry ? `${entry.title} | Camp` : "News Digest | Camp" };
 }
 
 export default async function PressDetailPage({ params }: PageProps) {
@@ -19,5 +19,5 @@ export default async function PressDetailPage({ params }: PageProps) {
   const entry = getEntryByTypeAndSlug("press", slug);
   if (!entry) notFound();
 
-  return <PostLayout entry={entry} backHref="/press" backLabel="Press" />;
+  return <PostLayout entry={entry} backHref="/press" backLabel="News Digest" />;
 }

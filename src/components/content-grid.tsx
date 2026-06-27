@@ -6,17 +6,18 @@ type ContentGridProps = {
   readonly entries: readonly ContentEntry[];
   readonly emptyTitle: string;
   readonly emptyDescription: string;
+  readonly showCardVisuals?: boolean;
 };
 
-export function ContentGrid({ entries, emptyTitle, emptyDescription }: ContentGridProps) {
+export function ContentGrid({ entries, emptyTitle, emptyDescription, showCardVisuals = false }: ContentGridProps) {
   if (entries.length === 0) {
     return <EmptyState title={emptyTitle} description={emptyDescription} />;
   }
 
   return (
-    <section className="grid gap-x-9 gap-y-12 md:grid-cols-2 xl:grid-cols-3">
+    <section className={showCardVisuals ? "grid gap-x-9 gap-y-12 md:grid-cols-2" : "space-y-3"}>
       {entries.map((entry) => (
-        <ContentCard key={`${entry.type}-${entry.slug}`} entry={entry} />
+        <ContentCard key={`${entry.type}-${entry.slug}`} entry={entry} showVisual={showCardVisuals} />
       ))}
     </section>
   );

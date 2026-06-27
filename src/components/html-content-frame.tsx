@@ -12,11 +12,7 @@ export function HtmlContentFrame({ html, title }: HtmlContentFrameProps) {
 
   return (
     <section className="min-w-0">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#e7e5dc] bg-white px-4 py-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7a8190]">HTML lesson</p>
-          <p className="mt-1 text-sm font-semibold text-[#171717]">게시글 안에서 HTML 파일을 격리된 화면으로 표시합니다.</p>
-        </div>
+      <div className="mb-4 flex justify-end">
         <button
           type="button"
           onClick={() => setExpanded(true)}

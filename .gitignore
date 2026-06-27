@@ -23,6 +23,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# local runtime data
+data/comments.json
+data/publish-requests.json
+
 # OS / editor
 .DS_Store
 .idea/

@@ -12,7 +12,33 @@ const meshStyleByType: Record<ContentEntry["type"], MeshStyle> = {
   teach: { "--mesh-color": "#88c8ff" },
 };
 
-export function ContentCard({ entry }: { readonly entry: ContentEntry }) {
+export function ContentCard({ entry, showVisual = true }: { readonly entry: ContentEntry; readonly showVisual?: boolean }) {
+  if (!showVisual) {
+    return (
+      <Link href={entry.href} className="group block rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 transition hover:border-[var(--foreground)] hover:bg-white">
+        <article className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+          <div className="min-w-0">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-[#55aabb] bg-white px-2.5 py-1 text-[0.63rem] font-semibold uppercase text-[#277687]">{entry.category ?? entry.type}</span>
+              <span className="text-xs text-[var(--muted)]">{entry.publishedAt ?? entry.createdAt}</span>
+            </div>
+            <h2 className="break-words text-2xl font-semibold leading-tight tracking-[-0.035em] text-[var(--foreground)] transition group-hover:text-[#277687]">{entry.title}</h2>
+            <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--muted)]">{entry.excerpt}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {entry.tags.map((tag) => (
+                <span key={tag} className="rounded-full bg-[var(--background)] px-2.5 py-1 text-xs text-[var(--muted)]">#{tag}</span>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2 text-xs font-semibold text-[var(--muted)] sm:flex-col sm:items-end">
+            <span className="rounded-full border border-[var(--line)] px-3 py-1 transition group-hover:border-[var(--foreground)] group-hover:text-[var(--foreground)]">게시글 열기</span>
+            <span className="rounded-full bg-[var(--surface-soft)] px-3 py-1">{entry.type}</span>
+          </div>
+        </article>
+      </Link>
+    );
+  }
+
   return (
     <Link href={entry.href} className="group block">
       <div className="mesh-card aspect-[1.68] w-full p-4 transition duration-200 group-hover:-translate-y-1" style={meshStyleByType[entry.type]}>

@@ -1,14 +1,10 @@
-import type { CSSProperties } from "react";
 import Link from "next/link";
+import { CommentsSection } from "@/components/comments-section";
 import { HtmlContentFrame } from "@/components/html-content-frame";
 import { MarkdownView } from "@/components/markdown-view";
 import { ShareLinkButton } from "@/components/share-link-button";
 import type { ContentEntry } from "@/lib/content";
 import { getMarkdownHeadings } from "@/lib/markdown-headings";
-
-type MeshStyle = CSSProperties & { readonly "--mesh-color": string };
-
-const postMeshStyle: MeshStyle = { "--mesh-color": "#76dec6" };
 
 function contentWithoutLeadingTitle(content: string, title: string) {
   const [firstLine, ...rest] = content.split("\n");
@@ -31,7 +27,7 @@ export function PostLayout({ entry, backHref, backLabel }: PostLayoutProps) {
 
   return (
     <article className="pb-16">
-      <header className="grid gap-10 border-b border-[#e7e5dc] pb-12 pt-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end">
+      <header className="border-b border-[#e7e5dc] pb-12 pt-10">
         <div className="max-w-80 sm:max-w-none">
           <Link href={backHref} className="text-sm font-semibold text-[#5b6270] transition hover:text-[#171717]">
             Back to {backLabel}
@@ -43,63 +39,39 @@ export function PostLayout({ entry, backHref, backLabel }: PostLayoutProps) {
           <h1 className="mt-5 max-w-4xl break-words text-4xl font-medium leading-[1.02] tracking-[-0.055em] text-[#171717] sm:text-7xl sm:leading-[0.98]">{entry.title}</h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-[#5b6270]">{entry.excerpt}</p>
         </div>
-        <div className="mesh-card hidden min-h-[300px] p-5 md:block" style={postMeshStyle}>
-          <div className="research-window ml-auto w-[78%] p-5">
-            <p className="text-[0.65rem] font-semibold uppercase text-[#7a8190]">Post brief</p>
-            <p className="mt-4 text-3xl font-semibold tracking-[-0.05em] text-[#171717]">{entry.tags.length || 1}</p>
-            <p className="text-xs font-semibold uppercase text-[#7a8190]">linked tags</p>
-            <div className="mt-5 h-24 rounded-lg bg-[#d7f45a]" />
+      </header>
+      <div className="pt-8">
+        <div className="mb-8 flex flex-col gap-4 border-y border-[#e7e5dc] py-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <span className="font-semibold text-[#171717]">{entry.author}</span>
+            <span className="text-[#7a8190]">{date}</span>
+            {entry.tags.map((tag) => (
+              <span key={tag} className="rounded-full bg-white px-2.5 py-1 text-xs text-[#5b6270]">#{tag}</span>
+            ))}
           </div>
-          <div className="research-window mt-5 w-[58%] p-4">
-            <p className="text-xs font-semibold text-[#171717]">{entry.author}</p>
-            <p className="mt-2 text-sm text-[#5b6270]">{date}</p>
+          <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto md:shrink-0">
+            <a
+              href="#comments"
+              className="inline-flex justify-center whitespace-nowrap rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)]"
+            >
+              댓글로 이동
+            </a>
+            <ShareLinkButton />
           </div>
         </div>
-      </header>
-      <div className="grid max-w-80 gap-10 pt-10 sm:max-w-none lg:grid-cols-[260px_minmax(0,760px)] lg:items-start">
-        <aside className="lg:sticky lg:top-36">
-          <div className="border-t border-[#171717] pt-4">
-            <p className="text-xs font-semibold uppercase text-[#6d7280]">In this post</p>
-            <dl className="mt-5 space-y-4 text-sm">
-              <div>
-                <dt className="text-[#7a8190]">Author</dt>
-                <dd className="mt-1 font-semibold text-[#171717]">{entry.author}</dd>
-              </div>
-              <div>
-                <dt className="text-[#7a8190]">Published</dt>
-                <dd className="mt-1 font-semibold text-[#171717]">{date}</dd>
-              </div>
-            </dl>
-            <div className="mt-6">
-              <ShareLinkButton />
-            </div>
-            {entry.tags.length > 0 ? (
-              <div className="mt-6">
-                <p className="text-xs font-semibold uppercase text-[#7a8190]">Hashtags</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {entry.tags.map((tag) => (
-                    <span key={tag} className="rounded-full bg-white px-2.5 py-1 text-xs text-[#5b6270]">#{tag}</span>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            {headings.length > 0 ? (
-              <nav className="mt-7 border-t border-[#e7e5dc] pt-5" aria-label="Table of contents">
-                <p className="text-xs font-semibold uppercase text-[#7a8190]">Contents</p>
-                <ol className="mt-3 space-y-2 text-sm leading-5">
-                  {headings.map((heading) => (
-                    <li key={heading.id} className={heading.depth === 1 ? "" : heading.depth === 2 ? "pl-3" : "pl-6"}>
-                      <a href={`#${heading.id}`} className="block text-[#5b6270] transition hover:text-[#171717]">
-                        {heading.text}
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              </nav>
-            ) : null}
-          </div>
-        </aside>
-        {entry.contentFormat === "html" ? <HtmlContentFrame html={bodyContent} title={entry.title} /> : <MarkdownView content={bodyContent} />}
+        {headings.length > 0 ? (
+          <nav className="mb-8 flex flex-wrap gap-x-5 gap-y-2 text-sm" aria-label="Table of contents">
+            {headings.map((heading) => (
+              <a key={heading.id} href={`#${heading.id}`} className="text-[#5b6270] transition hover:text-[#171717]">
+                {heading.text}
+              </a>
+            ))}
+          </nav>
+        ) : null}
+        <div className="min-w-0">
+          {entry.contentFormat === "html" ? <HtmlContentFrame html={bodyContent} title={entry.title} /> : <MarkdownView content={bodyContent} />}
+          <CommentsSection contentType={entry.type} contentSlug={entry.slug} />
+        </div>
       </div>
     </article>
   );

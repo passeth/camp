@@ -1,41 +1,207 @@
 "use server";
 
+import { access, mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireMember } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { markdownToHtmlDocument } from "@/lib/markdown-to-html";
+
+const publishMenus = ["press", "topic", "study-log"] as const;
+type PublishMenu = (typeof publishMenus)[number];
+
+const contentDirByMenu: Record<PublishMenu, string> = {
+  press: "press",
+  topic: "topics",
+  "study-log": "study-log",
+};
 
 const publishRequestSchema = z.object({
-  title: z.string().min(2).max(120),
-  slug: z.string().min(2).max(160).regex(/^[a-z0-9]+(?:[/-][a-z0-9]+)*$/),
-  type: z.enum(["press", "topic", "daily-review", "study-log", "teach"]),
+  authorName: z.string().trim().min(1).max(80),
+  title: z.string().trim().min(1).max(120),
+  slug: z.string().trim().max(160).optional().or(z.literal("")),
+  type: z.enum(publishMenus).default("study-log"),
   category: z.string().max(80).optional(),
+  uploadFormat: z.enum(["markdown", "html"]),
   tags: z.string().optional(),
-  markdown: z.string().min(20).max(50000),
 });
 
-export async function createPublishRequest(formData: FormData) {
-  const context = await requireMember();
+const finalPublishRequestSchema = publishRequestSchema.extend({
+  title: z.string().min(2).max(120),
+  slug: z.string().min(2).max(160).regex(/^[a-z0-9]+(?:[/-][a-z0-9]+)*$/),
+  contentFormat: z.literal("html"),
+  markdown: z.string().min(1).max(500000),
+  html: z.string().min(1).max(500000),
+});
+
+function getUploadFile(formData: FormData) {
+  const file = formData.get("contentFile");
+  return file instanceof File && file.size > 0 ? file : null;
+}
+
+function optionalFormText(formData: FormData, name: string) {
+  const value = formData.get(name);
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
+function basename(fileName: string) {
+  return fileName.replace(/\.[^.]+$/, "").trim();
+}
+
+function titleFromFile(fileName: string) {
+  return basename(fileName).replace(/[-_]+/g, " ") || "Untitled";
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120) || "uploaded-post";
+}
+
+function fileMatchesFormat(fileName: string, format: "markdown" | "html") {
+  if (format === "html") return /\.html?$/i.test(fileName);
+  return /\.(md|markdown)$/i.test(fileName);
+}
+
+async function pathExists(filePath: string) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function contentPath(type: PublishMenu, slug: string) {
+  return path.join(process.cwd(), "content", contentDirByMenu[type], `${slug}.html`);
+}
+
+async function uniqueSlug(type: PublishMenu, slug: string) {
+  let candidate = slug;
+  let suffix = 2;
+
+  while (await pathExists(contentPath(type, candidate))) {
+    candidate = `${slug}-${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+}
+
+function hrefForType(type: PublishMenu, slug: string) {
+  if (type === "press") return `/press/${slug}`;
+  if (type === "topic") return `/topics/${slug}`;
+  return `/study-log/${slug}`;
+}
+
+function quoteYamlString(value: string) {
+  return JSON.stringify(value);
+}
+
+function excerptFromSource(content: string) {
+  return content
+    .replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/[#*_`>-]/g, " ")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(" ")
+    .slice(0, 180) || "업로드한 게시글입니다.";
+}
+
+function buildPublishedContentFile(input: {
+  readonly title: string;
+  readonly slug: string;
+  readonly type: PublishMenu;
+  readonly authorName: string;
+  readonly category?: string;
+  readonly tags: readonly string[];
+  readonly excerpt: string;
+  readonly html: string;
+}) {
+  const now = new Date().toISOString().slice(0, 10);
+  const frontmatter = [
+    "---",
+    `title: ${quoteYamlString(input.title)}`,
+    `slug: ${quoteYamlString(input.slug)}`,
+    `type: ${quoteYamlString(input.type)}`,
+    `contentFormat: "html"`,
+    `status: "published"`,
+    `visibility: "public"`,
+    `author: ${quoteYamlString(input.authorName)}`,
+    `memberSlug: ${quoteYamlString(slugify(input.authorName))}`,
+    input.category ? `category: ${quoteYamlString(input.category)}` : undefined,
+    `tags: ${JSON.stringify([...new Set(input.tags)])}`,
+    `createdAt: ${quoteYamlString(now)}`,
+    `updatedAt: ${quoteYamlString(now)}`,
+    `publishedAt: ${quoteYamlString(now)}`,
+    `excerpt: ${quoteYamlString(input.excerpt)}`,
+    "---",
+  ].filter(Boolean);
+
+  return `${frontmatter.join("\n")}\n\n${input.html.trim()}\n`;
+}
+
+export async function createPublishPost(formData: FormData) {
+  const uploadFile = getUploadFile(formData);
+  if (!uploadFile) redirect("/write?error=invalid-input");
+
   const parsed = publishRequestSchema.safeParse({
+    authorName: formData.get("authorName"),
     title: formData.get("title"),
-    slug: formData.get("slug"),
-    type: formData.get("type"),
-    category: formData.get("category") || undefined,
-    tags: formData.get("tags") || undefined,
-    markdown: formData.get("markdown"),
+    slug: optionalFormText(formData, "slug"),
+    type: optionalFormText(formData, "type"),
+    category: optionalFormText(formData, "category"),
+    uploadFormat: formData.get("uploadFormat"),
+    tags: optionalFormText(formData, "tags"),
   });
 
   if (!parsed.success) redirect("/write?error=invalid-input");
+  if (!fileMatchesFormat(uploadFile.name, parsed.data.uploadFormat)) redirect("/write?error=invalid-input");
 
-  const supabase = await createClient();
-  const { tags, ...values } = parsed.data;
-  const { error } = await supabase.from("publish_requests").insert({
-    ...values,
-    user_id: context.user.id,
-    tags: tags?.split(",").map((tag) => tag.trim()).filter(Boolean) ?? [],
-    status: "submitted",
+  const sourceContent = await uploadFile.text();
+  const baseSlug = parsed.data.slug || slugify(parsed.data.title || basename(uploadFile.name));
+  const slug = await uniqueSlug(parsed.data.type, baseSlug);
+  const html = parsed.data.uploadFormat === "markdown"
+    ? markdownToHtmlDocument(sourceContent, parsed.data.title || titleFromFile(uploadFile.name))
+    : sourceContent;
+  const finalParsed = finalPublishRequestSchema.safeParse({
+    ...parsed.data,
+    title: parsed.data.title || titleFromFile(uploadFile.name),
+    slug,
+    contentFormat: "html",
+    markdown: sourceContent,
+    html,
   });
 
-  if (error) redirect("/write?error=submit-failed");
-  redirect("/dashboard?status=publish-request-submitted");
+  if (!finalParsed.success) redirect("/write?error=invalid-input");
+
+  const submission = finalParsed.data;
+  const tags = parsed.data.tags?.split(",").map((tag) => tag.trim()).filter(Boolean) ?? [];
+
+  const filePath = contentPath(submission.type, submission.slug);
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(
+    filePath,
+    buildPublishedContentFile({
+      title: submission.title,
+      slug: submission.slug,
+      type: submission.type,
+      authorName: submission.authorName,
+      category: submission.category,
+      tags,
+      excerpt: excerptFromSource(submission.markdown),
+      html: submission.html,
+    }),
+    "utf8",
+  );
+
+  redirect(hrefForType(submission.type, submission.slug));
 }

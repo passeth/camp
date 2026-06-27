@@ -13,6 +13,8 @@
   --accent-mint: #76dec6;
   --accent-lime: #d7f45a;
   --accent-violet: #9a6cff;
+  --status-warning-bg: #fff4d6;
+  --status-warning-text: #8a5a00;
 }
 
 * {

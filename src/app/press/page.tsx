@@ -7,9 +7,9 @@ export default function PressPage() {
   const entries = getEntriesByType("press");
   return (
     <div>
-      <PageHero eyebrow="Press" title="멤버들의 매거진" description="스터디 멤버별 관점, 프로젝트 회고, 발표 자료를 매거진처럼 발행하는 공간입니다." />
-      <SectionHeader eyebrow="Magazine desk" title="Published stories" description="멤버의 관점과 스터디의 흐름을 공개 가능한 글로 모읍니다." />
-      <ContentGrid entries={entries} emptyTitle="아직 Press가 없습니다" emptyDescription="첫 게시글을 작성하면 이곳에 표시됩니다." />
+      <PageHero eyebrow="News Digest" title="뉴스 다이제스트" description="스터디와 연결된 소식, 자료, 외부 흐름을 짧게 정리해 모읍니다." showVisual={false} />
+      <SectionHeader eyebrow="Digest desk" title="Published digests" description="나중에 다시 볼 만한 소식과 참고 자료를 한곳에 정리합니다." />
+      <ContentGrid entries={entries} emptyTitle="아직 News Digest가 없습니다" emptyDescription="첫 다이제스트를 작성하면 이곳에 표시됩니다." />
     </div>
   );
 }
