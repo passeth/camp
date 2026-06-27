@@ -132,6 +132,7 @@ function rowToEntry(row: z.infer<typeof contentRowSchema>): ContentEntry {
 
 export async function canUseRemoteContent({ requireWrite = false }: { requireWrite?: boolean } = {}) {
   if (!hasRemoteContentEnv({ requireWrite })) return false;
+  if (process.env.VERCEL) return true;
 
   const now = Date.now();
   if (remoteContentAvailable !== null && now - remoteContentCheckedAt < remoteCheckIntervalMs) {
