@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { ExpandableText } from "@/components/expandable-text";
 import { WallLinkPreview } from "@/components/wall-link-preview";
 import type { ContentEntry } from "@/lib/content";
 
@@ -29,10 +29,15 @@ export function WallClimbList({ entries }: { readonly entries: readonly ContentE
                   <span>{entry.author}</span>
                   <span>{entry.publishedAt ?? entry.createdAt}</span>
                 </div>
-                <Link href={entry.href} className="mt-3 block break-words text-xl font-semibold leading-tight tracking-[-0.035em] text-[var(--foreground)] transition hover:text-[#277687]">
+                <h2 className="mt-3 break-words text-xl font-semibold leading-tight tracking-[-0.035em] text-[var(--foreground)]">
                   {title}
-                </Link>
-                {showDescription ? <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{description}</p> : null}
+                </h2>
+                {showDescription ? (
+                  <ExpandableText
+                    className="mt-3 text-sm leading-6 text-[var(--muted)]"
+                    text={description}
+                  />
+                ) : null}
               </div>
             </div>
           </article>

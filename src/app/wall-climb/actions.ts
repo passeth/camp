@@ -16,6 +16,7 @@ const wallInputSchema = z.object({
   sourceTitle: z.string().trim().min(1).max(160).optional().or(z.literal("")),
   sourceUrl: z.string().trim().url().max(2_000),
   summary: z.string().trim().min(1).max(500).optional().or(z.literal("")),
+  tags: z.string().trim().max(300).optional().or(z.literal("")),
 });
 
 function slugify(value: string) {
@@ -62,6 +63,14 @@ function youtubePreviewImage(value: string) {
 
 function fallbackPreviewImage(value: string) {
   return githubPreviewImage(value) ?? youtubePreviewImage(value);
+}
+
+function tagsFromInput(value: string | undefined, sourceKind: "github" | "youtube" | "x" | "web") {
+  const userTags = (value ?? "")
+    .split(/[,\s]+/)
+    .map((tag) => tag.trim().replace(/^#+/, ""))
+    .filter(Boolean);
+  return [...new Set(["벽타기", sourceKind, ...userTags])];
 }
 
 function quoteYamlString(value: string) {
@@ -164,6 +173,7 @@ function contentFile(input: {
   readonly sourceTitle: string;
   readonly sourceUrl: string;
   readonly summary: string;
+  readonly tags: readonly string[];
   readonly title: string;
 }) {
   const now = new Date().toISOString().slice(0, 10);
@@ -178,7 +188,7 @@ function contentFile(input: {
     `author: ${quoteYamlString(input.authorName)}`,
     `memberSlug: ${quoteYamlString(slugify(input.authorName))}`,
     `category: "wall-climb"`,
-    `tags: ${JSON.stringify(["벽타기", input.sourceKind])}`,
+    `tags: ${JSON.stringify(input.tags)}`,
     `createdAt: ${quoteYamlString(now)}`,
     `updatedAt: ${quoteYamlString(now)}`,
     `publishedAt: ${quoteYamlString(now)}`,
@@ -205,6 +215,7 @@ export async function createWallClimbPost(formData: FormData) {
     sourceTitle: formData.get("sourceTitle"),
     sourceUrl: formData.get("sourceUrl"),
     summary: formData.get("summary"),
+    tags: formData.get("tags"),
   });
 
   if (!parsed.success) redirect("/wall-climb?error=invalid-input");
@@ -215,6 +226,7 @@ export async function createWallClimbPost(formData: FormData) {
   const sourceImage = input.sourceImage || fallbackPreviewImage(sourceUrl);
   const sourceTitle = input.sourceTitle || sourceUrl;
   const summary = input.summary || input.note;
+  const tags = tagsFromInput(input.tags, sourceKind);
   const title = titleFromNote(input.note);
   const baseSlug = slugify(title);
   const slug = await uniqueSlug(baseSlug);
@@ -241,7 +253,7 @@ export async function createWallClimbPost(formData: FormData) {
             author: input.authorName,
             memberSlug: slugify(input.authorName),
             category: "wall-climb",
-            tags: ["벽타기", sourceKind],
+            tags,
             excerpt: summary,
             html,
           });
@@ -276,6 +288,7 @@ export async function createWallClimbPost(formData: FormData) {
       sourceTitle,
       sourceUrl,
       summary,
+      tags,
       title,
     }),
     "utf8",

@@ -15,6 +15,7 @@ type WallSummary = {
 export function WallClimbForm({ action }: { readonly action: typeof createWallClimbPost }) {
   const [sourceUrl, setSourceUrl] = useState("");
   const [note, setNote] = useState("");
+  const [summaryText, setSummaryText] = useState("");
   const [summary, setSummary] = useState<WallSummary>();
   const [message, setMessage] = useState("");
   const [isSummarizing, startSummarizing] = useTransition();
@@ -33,13 +34,13 @@ export function WallClimbForm({ action }: { readonly action: typeof createWallCl
         return;
       }
       setSummary(payload.summary);
+      setSummaryText(payload.summary.summary);
       setMessage("요약이 준비되었습니다.");
     });
   }
 
   return (
     <form id="wall-form" action={action} className="grid gap-4 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 md:p-5">
-      <input type="hidden" name="summary" value={summary?.summary ?? ""} />
       <input type="hidden" name="sourceTitle" value={summary?.title ?? ""} />
       <input type="hidden" name="sourceImage" value={summary?.imageUrl ?? ""} />
       <input type="hidden" name="sourceKind" value={summary?.kind ?? ""} />
@@ -83,11 +84,35 @@ export function WallClimbForm({ action }: { readonly action: typeof createWallCl
           onChange={(event) => setNote(event.target.value)}
         />
       </label>
+      <label className="text-sm font-medium text-[#374151]">
+        요약
+        <textarea
+          className="mt-2 h-24 !min-h-24 text-sm leading-6"
+          name="summary"
+          placeholder="요약 버튼을 누르면 링크 내용 기반 요약이 생성됩니다. 직접 입력하거나 수정할 수도 있습니다."
+          value={summaryText}
+          onChange={(event) => setSummaryText(event.target.value)}
+        />
+      </label>
+      <label className="text-sm font-medium text-[#374151]">
+        해시태그
+        <input
+          className="mt-2"
+          name="tags"
+          placeholder="#ai #frontend 또는 ai, frontend"
+        />
+      </label>
       {summary ? (
         <section className="rounded-lg bg-[var(--surface-soft)] p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">{summary.kind}</p>
           <p className="mt-1 text-base font-semibold text-[var(--foreground)]">{summary.title}</p>
-          <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{summary.summary}</p>
+          {summary.imageUrl ? (
+            <div
+              className="mt-3 aspect-video max-w-sm rounded-lg bg-[#171717] bg-cover bg-center"
+              style={{ backgroundImage: `url(${summary.imageUrl})` }}
+              aria-label={summary.title}
+            />
+          ) : null}
         </section>
       ) : null}
       {message ? <p className="text-sm text-[var(--muted)]">{message}</p> : null}

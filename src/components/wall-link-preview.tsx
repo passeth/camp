@@ -1,4 +1,5 @@
 import type { ContentEntry } from "@/lib/content";
+import { ExpandableText } from "@/components/expandable-text";
 
 function youtubeId(value?: string) {
   if (!value) return undefined;
@@ -81,7 +82,12 @@ export function WallLinkPreview({ entry }: { readonly entry: ContentEntry }) {
       )}
       <div className="p-4">
         <p className="line-clamp-2 text-lg font-semibold leading-tight tracking-[-0.03em] text-white">{label}</p>
-        {description ? <p className="mt-3 line-clamp-2 text-sm leading-6 text-[#b8b8b8]">{description}</p> : null}
+        {description ? (
+          <ExpandableText
+            className="mt-3 text-sm leading-6 text-[#b8b8b8]"
+            text={description}
+          />
+        ) : null}
         <p className="mt-3 truncate text-sm font-semibold text-[#54a3ff]">{host}</p>
       </div>
     </a>
