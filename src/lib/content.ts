@@ -39,6 +39,10 @@ const frontmatterSchema = z.object({
   publishedAt: z.string().optional(),
   coverImage: z.string().optional(),
   excerpt: z.string().optional(),
+  replyTo: z.object({
+    type: z.enum(contentTypes),
+    slug: z.string().trim().min(1),
+  }).optional(),
 });
 
 export type ContentEntry = z.infer<typeof frontmatterSchema> & {
@@ -151,6 +155,16 @@ export function getLatestEntries(limit = 6) {
 export async function getAllContentEntriesAsync({ includeUnpublished = false }: { includeUnpublished?: boolean } = {}) {
   const entriesByType = await Promise.all(contentTypes.map((type) => getEntriesByTypeAsync(type, { includeUnpublished })));
   return sortEntries(entriesByType.flat());
+}
+
+export async function getReplyEntriesForParentAsync(parentType: ContentType, parentSlug: string) {
+  return (await getAllContentEntriesAsync())
+    .filter((entry) => entry.replyTo?.type === parentType && entry.replyTo.slug === parentSlug);
+}
+
+export async function getParentEntryForReplyAsync(entry: Pick<ContentEntry, "replyTo">) {
+  if (!entry.replyTo) return undefined;
+  return getEntryByTypeAndSlugAsync(entry.replyTo.type, entry.replyTo.slug);
 }
 
 export async function getLatestEntriesAsync(limit = 6) {

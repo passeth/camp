@@ -1,6 +1,9 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
+import { CommentRow } from "@/components/comment-row";
+import { ReplyPostList, type ReplyPostSummary } from "@/components/reply-post-list";
 import type { ContentType } from "@/lib/content";
 const apiCommentSchema = z.object({
   id: z.string(),
@@ -23,6 +26,8 @@ type Notice =
 type CommentsSectionProps = {
   readonly contentType: ContentType;
   readonly contentSlug: string;
+  readonly replyPostHref: string;
+  readonly replyPosts: readonly ReplyPostSummary[];
 };
 class CommentRequestError extends Error {
   constructor(message: string) {
@@ -30,13 +35,7 @@ class CommentRequestError extends Error {
     this.name = "CommentRequestError";
   }
 }
-function formatCommentDate(value: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-export function CommentsSection({ contentType, contentSlug }: CommentsSectionProps) {
+export function CommentsSection({ contentType, contentSlug, replyPostHref, replyPosts }: CommentsSectionProps) {
   const [comments, setComments] = useState<readonly ApiComment[]>([]);
   const [authorName, setAuthorName] = useState("");
   const [body, setBody] = useState("");
@@ -132,6 +131,9 @@ export function CommentsSection({ contentType, contentSlug }: CommentsSectionPro
       });
     }
   }
+  function updateDeletePassword(commentId: string, nextPassword: string) {
+    setDeletePasswords((current) => ({ ...current, [commentId]: nextPassword }));
+  }
   return (
     <section id="comments" className="mt-12 scroll-mt-28 border-t border-[var(--line)] pt-8" aria-labelledby="comments-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -141,7 +143,12 @@ export function CommentsSection({ contentType, contentSlug }: CommentsSectionPro
             답글
           </h2>
         </div>
-        <p className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-sm font-semibold text-[var(--muted)]">{comments.length}개</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-sm font-semibold text-[var(--muted)]">{comments.length + replyPosts.length}개</p>
+          <Link href={replyPostHref} className="rounded-full border border-[var(--foreground)] bg-[var(--foreground)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-80">
+            게시글로 답하기
+          </Link>
+        </div>
       </div>
       <form onSubmit={submitComment} className="mt-6 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -196,52 +203,21 @@ export function CommentsSection({ contentType, contentSlug }: CommentsSectionPro
         </div>
       </form>
       <div className="mt-6 space-y-3">
-        {comments.length === 0 && notice.kind !== "loading" ? (
+        <ReplyPostList posts={replyPosts} />
+        {comments.length === 0 && replyPosts.length === 0 && notice.kind !== "loading" ? (
           <p className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-soft)] px-4 py-5 text-sm text-[var(--muted)]">아직 답글이 없습니다. 첫 질문이나 보충 자료를 남겨보세요.</p>
         ) : null}
         {comments.map((comment) => (
-          <article key={comment.id} className="grid grid-cols-[24px_minmax(0,1fr)] gap-3 rounded-lg border border-[var(--line)] bg-white p-4">
-            <div className="flex flex-col items-center" aria-hidden="true">
-              <span className="h-2 w-2 rounded-full bg-[var(--foreground)]" />
-              <span className="mt-2 min-h-16 w-px flex-1 bg-[var(--line)]" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <h3 className="text-sm font-semibold text-[var(--foreground)]">{comment.authorName}</h3>
-                <time className="text-xs text-[var(--muted)]" dateTime={comment.createdAt}>
-                  {formatCommentDate(comment.createdAt)}
-                </time>
-              </div>
-              <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-[var(--foreground)]">{comment.body}</p>
-              <form
-                className="mt-4 flex flex-col gap-2 border-t border-[var(--line)] pt-3 sm:flex-row sm:items-center"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void deleteComment(comment.id);
-                }}
-              >
-                <input
-                  type="password"
-                  value={deletePasswords[comment.id] ?? ""}
-                  onChange={(event) => {
-                    const nextPassword = event.currentTarget.value;
-                    setDeletePasswords((current) => ({ ...current, [comment.id]: nextPassword }));
-                  }}
-                  maxLength={80}
-                  className="w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--brand)] sm:w-44"
-                  placeholder="삭제 비밀번호"
-                  aria-label={`${comment.authorName} 댓글 삭제 비밀번호`}
-                />
-                <button
-                  type="submit"
-                  disabled={notice.kind === "loading"}
-                  className="rounded-full border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  삭제
-                </button>
-              </form>
-            </div>
-          </article>
+          <CommentRow
+            key={comment.id}
+            comment={comment}
+            deletePassword={deletePasswords[comment.id] ?? ""}
+            disabled={notice.kind === "loading"}
+            onDelete={(commentId) => {
+              void deleteComment(commentId);
+            }}
+            onDeletePasswordChange={updateDeletePassword}
+          />
         ))}
       </div>
     </section>

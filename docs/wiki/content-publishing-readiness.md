@@ -13,13 +13,14 @@ Current behavior:
 - visitors upload a Markdown or HTML file
 - Markdown uploads are converted into a standalone HTML document on the server
 - when Supabase remote content storage is configured, the app writes the published HTML body into `content_index`
+- posts can also carry `replyTo` metadata, which links a long-form reply post back to its parent post and lets the parent render that reply alongside short comments
 - local development falls back to writing a published `.html` content file under the matching `content/` folder
 - duplicate slugs are resolved with numeric suffixes such as `-2` and `-3`
 - the user is redirected directly to the public post URL
 
 This path is intentionally separate from the Obsidian plugin PR flow below.
 
-Production deployments must not rely on runtime writes to `content/`. Vercel Functions only provide temporary writable filesystem space, so deployed community uploads need persistent storage. Apply `supabase/migrations/0006_content_index_body.sql` before enabling immediate public uploads in production; it adds `content_format`, `content`, and `excerpt` to `content_index`.
+Production deployments must not rely on runtime writes to `content/`. Vercel Functions only provide temporary writable filesystem space, so deployed community uploads need persistent storage. Apply `supabase/migrations/0006_content_index_body.sql` before enabling immediate public uploads in production; it adds `content_format`, `content`, and `excerpt` to `content_index`. Apply `supabase/migrations/0007_content_index_reply_links.sql` as well before enabling post-as-reply links in production; it adds `parent_type` and `parent_slug`.
 
 ## Readiness contract
 

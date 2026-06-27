@@ -21,6 +21,8 @@ const contentRowSchema = z.object({
   content_format: z.enum(["markdown", "html"]).nullable(),
   content: z.string().nullable(),
   excerpt: z.string().nullable(),
+  parent_type: contentTypeSchema.nullable().optional(),
+  parent_slug: z.string().nullable().optional(),
 }).readonly();
 
 const contentRowsSchema = z.array(contentRowSchema).readonly();
@@ -40,6 +42,10 @@ export type RemoteContentInput = {
   readonly tags: readonly string[];
   readonly excerpt: string;
   readonly html: string;
+  readonly replyTo?: {
+    readonly type: ContentType;
+    readonly slug: string;
+  };
 };
 
 function serverEnv(name: string) {
@@ -118,6 +124,7 @@ function rowToEntry(row: z.infer<typeof contentRowSchema>): ContentEntry {
     publishedAt,
     content: row.content?.trim() ?? "",
     excerpt: row.excerpt ?? "",
+    replyTo: row.parent_type && row.parent_slug ? { type: row.parent_type, slug: row.parent_slug } : undefined,
     href: `${baseHrefForType(row.type)}/${row.slug}`.replace(/\/index$/, ""),
     pathSegments: row.slug.split("/").filter(Boolean),
   };
@@ -159,7 +166,7 @@ export async function getRemoteEntriesByType(type: ContentType, { includeUnpubli
   const supabase = createAnonClient();
   let query = supabase
     .from("content_index")
-    .select("slug, type, title, status, visibility, author, member_slug, category, tags, published_at, created_at, updated_at, content_format, content, excerpt")
+    .select("slug, type, title, status, visibility, author, member_slug, category, tags, published_at, created_at, updated_at, content_format, content, excerpt, parent_type, parent_slug")
     .eq("type", type)
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
@@ -217,6 +224,8 @@ export async function createRemoteContent(input: RemoteContentInput) {
       content_format: "html",
       content: input.html,
       excerpt: input.excerpt,
+      parent_type: input.replyTo?.type,
+      parent_slug: input.replyTo?.slug,
     });
 
   if (error) throw error;

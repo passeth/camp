@@ -4,6 +4,7 @@ import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { contentTypes, type ContentType } from "@/lib/content";
 import { markdownToHtmlDocument } from "@/lib/markdown-to-html";
 import { canUseRemoteContent, createRemoteContent, remoteContentExists } from "@/lib/remote-content-store";
 
@@ -24,6 +25,8 @@ const publishRequestSchema = z.object({
   category: z.string().max(80).optional(),
   uploadFormat: z.enum(["markdown", "html"]),
   tags: z.string().optional(),
+  parentType: z.enum(contentTypes).optional(),
+  parentSlug: z.string().trim().min(1).max(160).optional(),
 });
 
 const finalPublishRequestSchema = publishRequestSchema.extend({
@@ -126,6 +129,10 @@ function buildPublishedContentFile(input: {
   readonly tags: readonly string[];
   readonly excerpt: string;
   readonly html: string;
+  readonly replyTo?: {
+    readonly type: ContentType;
+    readonly slug: string;
+  };
 }) {
   const now = new Date().toISOString().slice(0, 10);
   const frontmatter = [
@@ -143,6 +150,7 @@ function buildPublishedContentFile(input: {
     `createdAt: ${quoteYamlString(now)}`,
     `updatedAt: ${quoteYamlString(now)}`,
     `publishedAt: ${quoteYamlString(now)}`,
+    input.replyTo ? `replyTo:\n  type: ${quoteYamlString(input.replyTo.type)}\n  slug: ${quoteYamlString(input.replyTo.slug)}` : undefined,
     `excerpt: ${quoteYamlString(input.excerpt)}`,
     "---",
   ].filter(Boolean);
@@ -162,6 +170,8 @@ export async function createPublishPost(formData: FormData) {
     category: optionalFormText(formData, "category"),
     uploadFormat: formData.get("uploadFormat"),
     tags: optionalFormText(formData, "tags"),
+    parentType: optionalFormText(formData, "parentType"),
+    parentSlug: optionalFormText(formData, "parentSlug"),
   });
 
   if (!parsed.success) redirect("/write?error=invalid-input");
@@ -187,6 +197,9 @@ export async function createPublishPost(formData: FormData) {
   const submission = finalParsed.data;
   const tags = parsed.data.tags?.split(",").map((tag) => tag.trim()).filter(Boolean) ?? [];
   const excerpt = excerptFromSource(submission.markdown);
+  const replyTo = submission.parentType && submission.parentSlug
+    ? { type: submission.parentType, slug: submission.parentSlug }
+    : undefined;
 
   if (await canUseRemoteContent({ requireWrite: true })) {
     try {
@@ -200,6 +213,7 @@ export async function createPublishPost(formData: FormData) {
         tags,
         excerpt,
         html: submission.html,
+        replyTo,
       });
     } catch (error) {
       console.error(error);
@@ -221,6 +235,7 @@ export async function createPublishPost(formData: FormData) {
       tags,
       excerpt,
       html: submission.html,
+      replyTo,
     }),
     "utf8",
   );

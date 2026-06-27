@@ -3,7 +3,7 @@ import { CommentsSection } from "@/components/comments-section";
 import { HtmlContentFrame } from "@/components/html-content-frame";
 import { MarkdownView } from "@/components/markdown-view";
 import { ShareLinkButton } from "@/components/share-link-button";
-import type { ContentEntry } from "@/lib/content";
+import { getParentEntryForReplyAsync, getReplyEntriesForParentAsync, type ContentEntry } from "@/lib/content";
 import { getMarkdownHeadings } from "@/lib/markdown-headings";
 
 function contentWithoutLeadingTitle(content: string, title: string) {
@@ -20,10 +20,34 @@ type PostLayoutProps = {
   readonly backLabel: string;
 };
 
-export function PostLayout({ entry, backHref, backLabel }: PostLayoutProps) {
+function replyPostHrefForEntry(entry: ContentEntry) {
+  const params = new URLSearchParams({
+    replyToType: entry.type,
+    replyToSlug: entry.slug,
+    replyToTitle: entry.title,
+  });
+  return `/write?${params.toString()}`;
+}
+
+function replyPostSummary(entry: ContentEntry) {
+  return {
+    author: entry.author,
+    excerpt: entry.excerpt,
+    href: entry.href,
+    publishedAt: entry.publishedAt,
+    title: entry.title,
+    type: entry.type,
+  };
+}
+
+export async function PostLayout({ entry, backHref, backLabel }: PostLayoutProps) {
   const date = entry.publishedAt ?? entry.createdAt;
   const bodyContent = entry.contentFormat === "html" ? entry.content : contentWithoutLeadingTitle(entry.content, entry.title);
   const headings = entry.contentFormat === "html" ? [] : getMarkdownHeadings(bodyContent);
+  const [parentEntry, replyPosts] = await Promise.all([
+    getParentEntryForReplyAsync(entry),
+    getReplyEntriesForParentAsync(entry.type, entry.slug),
+  ]);
 
   return (
     <article className="pb-16">
@@ -59,6 +83,15 @@ export function PostLayout({ entry, backHref, backLabel }: PostLayoutProps) {
             <ShareLinkButton />
           </div>
         </div>
+        {parentEntry ? (
+          <section className="mb-8 rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-4" aria-label="원문 게시글">
+            <p className="text-xs font-semibold uppercase text-[var(--muted)]">Reply to</p>
+            <Link href={parentEntry.href} className="mt-2 block text-lg font-semibold tracking-[-0.03em] text-[var(--foreground)] transition hover:opacity-70">
+              {parentEntry.title}
+            </Link>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{parentEntry.excerpt}</p>
+          </section>
+        ) : null}
         {headings.length > 0 ? (
           <nav className="mb-8 flex flex-wrap gap-x-5 gap-y-2 text-sm" aria-label="Table of contents">
             {headings.map((heading) => (
@@ -70,7 +103,12 @@ export function PostLayout({ entry, backHref, backLabel }: PostLayoutProps) {
         ) : null}
         <div className="min-w-0">
           {entry.contentFormat === "html" ? <HtmlContentFrame html={bodyContent} title={entry.title} /> : <MarkdownView content={bodyContent} />}
-          <CommentsSection contentType={entry.type} contentSlug={entry.slug} />
+          <CommentsSection
+            contentType={entry.type}
+            contentSlug={entry.slug}
+            replyPostHref={replyPostHrefForEntry(entry)}
+            replyPosts={replyPosts.map(replyPostSummary)}
+          />
         </div>
       </div>
     </article>
