@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   const allEntries = await getAllContentEntriesAsync();
-  const recentEntries = allEntries.slice(0, 5);
+  const recentEntries = allEntries.slice(0, 10);
   const tagSummaries = getTagSummaries(allEntries);
   const childPostsByParentKey = getChildPostsByParent(allEntries);
   const [commentCounts, replyPostCounts] = await Promise.all([

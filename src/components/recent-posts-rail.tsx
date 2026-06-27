@@ -13,8 +13,22 @@ function entryKey(entry: Pick<ContentEntry, "type" | "slug">) {
   return `${entry.type}:${entry.slug}`;
 }
 
+function entryTime(entry: Pick<ContentEntry, "createdAt" | "publishedAt">) {
+  return Date.parse(entry.publishedAt ?? entry.createdAt);
+}
+
 export function RecentPostsRail({ childPostsByParentKey = {}, entries, linkedPostKeys = [], replyCounts = {} }: RecentPostsRailProps) {
   const linkedKeys = new Set(linkedPostKeys);
+  const sortedEntries = [...entries].sort((a, b) => {
+    const aKey = entryKey(a);
+    const bKey = entryKey(b);
+    const aReplyWeight = (replyCounts[aKey] ?? 0) + (childPostsByParentKey[aKey]?.length ?? 0);
+    const bReplyWeight = (replyCounts[bKey] ?? 0) + (childPostsByParentKey[bKey]?.length ?? 0);
+
+    if (aReplyWeight > 0 && bReplyWeight === 0) return -1;
+    if (aReplyWeight === 0 && bReplyWeight > 0) return 1;
+    return entryTime(b) - entryTime(a);
+  });
 
   return (
     <aside className="min-w-0 pb-10 xl:block">
@@ -26,7 +40,7 @@ export function RecentPostsRail({ childPostsByParentKey = {}, entries, linkedPos
           </Link>
         </div>
         <div className="mt-4">
-          {entries.map((entry, index) => {
+          {sortedEntries.map((entry, index) => {
             const key = entryKey(entry);
             const replyCount = replyCounts[key] ?? 0;
             const isLinked = linkedKeys.has(key);
