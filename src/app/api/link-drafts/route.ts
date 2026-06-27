@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const requestSchema = z.object({
   url: z.string().trim().url().max(2_000),
@@ -24,7 +25,7 @@ type SourceSummary = {
 };
 
 const requestTimeoutMs = 8_000;
-const sourceTextLimit = 24_000;
+const sourceTextLimit = 12_000;
 
 function requireDeepSeekApiKey() {
   const value = process.env.DEEPSEEK_API_KEY;
@@ -247,7 +248,7 @@ async function summarizeSource(source: SourceSummary) {
         },
       ],
     }),
-    signal: timeoutSignal(30_000),
+    signal: timeoutSignal(55_000),
   });
 
   if (!response.ok) {
