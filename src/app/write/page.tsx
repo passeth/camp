@@ -1,10 +1,13 @@
 import { contentTypes } from "@/lib/content";
+import type { ContentType } from "@/lib/content";
 import { createPublishPost } from "./actions";
 import { WritePostForm } from "./write-post-form";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = { searchParams: Promise<{ defaultType?: string; detail?: string; error?: string; replyToSlug?: string; replyToTitle?: string; replyToType?: string; status?: string }> };
+
+const publishableTypes = ["study-log", "camp-session", "wall-climb", "press"] satisfies readonly ContentType[];
 
 function parseReplyTo(type?: string, slug?: string) {
   if (!type || !slug) return undefined;
@@ -28,7 +31,8 @@ function errorMessage(error?: string, detail?: string) {
 export default async function WritePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const replyTo = parseReplyTo(params.replyToType, params.replyToSlug);
-  const defaultType = contentTypes.find((candidate) => candidate === params.defaultType) ?? replyTo?.type ?? "study-log";
+  const requestedType = contentTypes.find((candidate) => candidate === params.defaultType) ?? replyTo?.type;
+  const defaultType = publishableTypes.find((candidate) => candidate === requestedType) ?? "study-log";
 
   return (
     <div className="space-y-8">

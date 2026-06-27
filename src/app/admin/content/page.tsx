@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { deleteContentPost } from "@/app/admin/content/actions";
+import { deleteContentPost, togglePinnedContentPost } from "@/app/admin/content/actions";
 import { StatusPill } from "@/components/status-pill";
 import { requireAdmin } from "@/lib/auth";
 import { getAllContentEntriesAsync } from "@/lib/content";
@@ -11,6 +11,19 @@ type PageProps = { searchParams: Promise<{ error?: string; status?: string }> };
 function editHref(type: string, slug: string) {
   const params = new URLSearchParams({ type, slug });
   return `/admin/content/edit?${params.toString()}`;
+}
+
+function StarIcon({ filled }: { readonly filled: boolean }) {
+  return (
+    <svg aria-hidden="true" className="size-4" fill={filled ? "currentColor" : "none"} viewBox="0 0 24 24">
+      <path
+        d="m12 3.6 2.6 5.3 5.9.8-4.3 4.2 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.2 5.9-.8L12 3.6Z"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
 }
 
 export default async function AdminContentPage({ searchParams }: PageProps) {
@@ -34,11 +47,28 @@ export default async function AdminContentPage({ searchParams }: PageProps) {
               <div className="flex flex-wrap items-center gap-2">
                 <StatusPill>{entry.type}</StatusPill>
                 <StatusPill tone={entry.status === "published" ? "good" : "warn"}>{entry.status}</StatusPill>
+                {entry.pinned ? <StatusPill tone="warn">고정됨</StatusPill> : null}
               </div>
               <h2 className="mt-3 break-words text-xl font-semibold tracking-[-0.035em] text-[#171717]">{entry.title}</h2>
               <p className="mt-1 text-sm text-[#6d7280]">{entry.author} · {entry.publishedAt ?? entry.createdAt} · {entry.slug}</p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <form action={togglePinnedContentPost}>
+                <input type="hidden" name="type" value={entry.type} />
+                <input type="hidden" name="slug" value={entry.slug} />
+                <input type="hidden" name="pinned" value={entry.pinned ? "true" : "false"} />
+                <button
+                  className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition ${
+                    entry.pinned
+                      ? "border-[#ead99a] bg-[#fff4d6] text-[#8a5a00] hover:border-[#8a5a00]"
+                      : "border-[#e7e5dc] bg-white text-[#5b6270] hover:border-[#171717] hover:text-[#171717]"
+                  }`}
+                  title={entry.pinned ? "상단 고정 해제" : "상단 고정"}
+                >
+                  <StarIcon filled={entry.pinned} />
+                  {entry.pinned ? "고정 해제" : "상단 고정"}
+                </button>
+              </form>
               {entry.status === "published" ? (
                 <Link href={entry.href} className="rounded-full border border-[#e7e5dc] px-4 py-2 text-sm font-semibold">
                   보기

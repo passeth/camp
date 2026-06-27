@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { deleteContentPost } from "@/app/admin/content/actions";
+import { deleteContentPost, togglePinnedContentPost } from "@/app/admin/content/actions";
 import { CommentsSection } from "@/components/comments-section";
 import { HtmlContentFrame } from "@/components/html-content-frame";
 import { MarkdownView } from "@/components/markdown-view";
@@ -93,6 +93,14 @@ export async function PostLayout({ entry, backHref, backLabel }: PostLayoutProps
                 >
                   수정
                 </Link>
+                <form action={togglePinnedContentPost}>
+                  <input type="hidden" name="type" value={entry.type} />
+                  <input type="hidden" name="slug" value={entry.slug} />
+                  <input type="hidden" name="pinned" value={entry.pinned ? "true" : "false"} />
+                  <button className={`inline-flex h-10 items-center justify-center whitespace-nowrap rounded-full border px-4 text-sm font-semibold transition ${entry.pinned ? "border-[#ead99a] bg-[#fff4d6] text-[#8a5a00] hover:border-[#8a5a00]" : "border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--foreground)] hover:bg-[var(--surface-soft)]"}`}>
+                    {entry.pinned ? "고정 해제" : "상단 고정"}
+                  </button>
+                </form>
                 <form action={deleteContentPost}>
                   <input type="hidden" name="type" value={entry.type} />
                   <input type="hidden" name="slug" value={entry.slug} />

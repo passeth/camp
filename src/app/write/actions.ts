@@ -8,7 +8,7 @@ import { contentTypes, type ContentType } from "@/lib/content";
 import { markdownToHtmlDocument } from "@/lib/markdown-to-html";
 import { canUseRemoteContent, createRemoteContent, remoteContentExists, RemoteContentConflictError } from "@/lib/remote-content-store";
 
-const publishMenus = ["press", "topic", "study-log", "camp-session"] as const;
+const publishMenus = ["press", "study-log", "camp-session", "wall-climb"] as const;
 type PublishMenu = (typeof publishMenus)[number];
 
 function writeErrorHref(error: string, detail?: string) {
@@ -19,9 +19,9 @@ function writeErrorHref(error: string, detail?: string) {
 
 const contentDirByMenu: Record<PublishMenu, string> = {
   press: "press",
-  topic: "topics",
   "study-log": "study-log",
   "camp-session": "camp-session",
+  "wall-climb": "wall-climb",
 };
 
 const publishRequestSchema = z.object({
@@ -112,8 +112,8 @@ function nextSlugCandidate(baseSlug: string, attempt: number) {
 
 function hrefForType(type: PublishMenu, slug: string) {
   if (type === "press") return `/press/${slug}`;
-  if (type === "topic") return `/topics/${slug}`;
   if (type === "camp-session") return `/camp-session/${slug}`;
+  if (type === "wall-climb") return `/wall-climb/${slug}`;
   return `/study-log/${slug}`;
 }
 

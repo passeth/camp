@@ -92,7 +92,7 @@ export function WritePostForm({ action, defaultType, replyTo }: WritePostFormPro
           <select className="mt-2" name="type" defaultValue={defaultType} required>
             <option value="study-log">Study Log</option>
             <option value="camp-session">Camp Session</option>
-            <option value="topic">Topics</option>
+            <option value="wall-climb">벽타기</option>
             <option value="press">News Digest</option>
           </select>
         </label>

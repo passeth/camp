@@ -4,7 +4,7 @@ import matter from "gray-matter";
 import { z } from "zod";
 import { getRemoteEntriesByType } from "@/lib/remote-content-store";
 
-export const contentTypes = ["press", "topic", "daily-review", "study-log", "camp-session", "teach"] as const;
+export const contentTypes = ["press", "topic", "daily-review", "study-log", "camp-session", "wall-climb", "teach"] as const;
 export type ContentType = (typeof contentTypes)[number];
 
 const contentDirByType: Record<ContentType, string> = {
@@ -13,6 +13,7 @@ const contentDirByType: Record<ContentType, string> = {
   "daily-review": "daily-review",
   "study-log": "study-log",
   "camp-session": "camp-session",
+  "wall-climb": "wall-climb",
   teach: "teach",
 };
 
@@ -22,6 +23,7 @@ const baseHrefByType: Record<ContentType, string> = {
   "daily-review": "/daily-review",
   "study-log": "/study-log",
   "camp-session": "/camp-session",
+  "wall-climb": "/wall-climb",
   teach: "/teach",
 };
 
@@ -41,6 +43,12 @@ const frontmatterSchema = z.object({
   publishedAt: z.string().optional(),
   coverImage: z.string().optional(),
   excerpt: z.string().optional(),
+  pinned: z.boolean().default(false),
+  sourceUrl: z.string().url().optional(),
+  sourceTitle: z.string().optional(),
+  sourceKind: z.enum(["github", "youtube", "x", "web"]).optional(),
+  note: z.string().optional(),
+  summary: z.string().optional(),
   replyTo: z.object({
     type: z.enum(contentTypes),
     slug: z.string().trim().min(1),
@@ -54,6 +62,12 @@ export type ContentEntry = z.infer<typeof frontmatterSchema> & {
   href: string;
   pathSegments: string[];
 };
+
+const internalPinnedTag = "__camp_pinned";
+
+function publicTags(tags: readonly string[]) {
+  return tags.filter((tag) => tag !== internalPinnedTag);
+}
 
 function rootContentDir() {
   return path.join(process.cwd(), "content");
@@ -104,6 +118,7 @@ export function getEntriesByType(type: ContentType, { includeUnpublished = false
       const segments = relative.split(path.sep).filter(Boolean);
       return {
         ...data,
+        tags: publicTags(data.tags),
         contentFormat,
         content: parsed.content.trim(),
         excerpt: data.excerpt ?? excerptFromContent(parsed.content, contentFormat),
@@ -117,7 +132,11 @@ export function getEntriesByType(type: ContentType, { includeUnpublished = false
 }
 
 function sortEntries(entries: readonly ContentEntry[]) {
-  return [...entries].sort((a, b) => Date.parse(b.publishedAt ?? b.createdAt) - Date.parse(a.publishedAt ?? a.createdAt));
+  return [...entries].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return Date.parse(b.publishedAt ?? b.createdAt) - Date.parse(a.publishedAt ?? a.createdAt);
+  });
 }
 
 function mergeEntries(primary: readonly ContentEntry[], fallback: readonly ContentEntry[], { includeUnpublished = false }: { includeUnpublished?: boolean } = {}) {

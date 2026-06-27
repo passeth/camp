@@ -11,6 +11,7 @@ const meshStyleByType: Record<ContentEntry["type"], MeshStyle> = {
   "daily-review": { "--mesh-color": "#d7f45a" },
   "study-log": { "--mesh-color": "#9a6cff" },
   "camp-session": { "--mesh-color": "#ffb86b" },
+  "wall-climb": { "--mesh-color": "#76dec6" },
   teach: { "--mesh-color": "#88c8ff" },
 };
 

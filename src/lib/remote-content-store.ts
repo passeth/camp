@@ -3,7 +3,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { ContentEntry, ContentType } from "@/lib/content";
 
-const contentTypeSchema = z.enum(["press", "topic", "daily-review", "study-log", "camp-session", "teach"]);
+const contentTypeSchema = z.enum(["press", "topic", "daily-review", "study-log", "camp-session", "wall-climb", "teach"]);
 
 const contentRowSchema = z.object({
   slug: z.string(),
@@ -23,11 +23,13 @@ const contentRowSchema = z.object({
   excerpt: z.string().nullable(),
   parent_type: contentTypeSchema.nullable().optional(),
   parent_slug: z.string().nullable().optional(),
+  pinned: z.boolean().nullable().optional(),
 }).readonly();
 
 const contentRowsSchema = z.array(contentRowSchema).readonly();
 const remoteRequestTimeoutMs = 1800;
 const remoteCheckIntervalMs = 60_000;
+const internalPinnedTag = "__camp_pinned";
 
 let remoteContentAvailable: boolean | null = null;
 let remoteContentCheckedAt = 0;
@@ -42,6 +44,7 @@ export type RemoteContentInput = {
   readonly tags: readonly string[];
   readonly excerpt: string;
   readonly html: string;
+  readonly pinned?: boolean;
   readonly replyTo?: {
     readonly type: ContentType;
     readonly slug: string;
@@ -109,17 +112,18 @@ function createReadClient() {
 }
 
 function remoteTypeFor(type: ContentType) {
-  return type === "camp-session" ? "study-log" : type;
+  return type === "camp-session" || type === "wall-climb" ? "study-log" : type;
 }
 
 function remoteCategoryFor(input: RemoteContentInput) {
-  return input.type === "camp-session" ? "camp-session" : input.category;
+  if (input.type === "camp-session" || input.type === "wall-climb") return input.type;
+  return input.category;
 }
 
 function remoteReplyToFor(replyTo?: RemoteContentInput["replyTo"]) {
   if (!replyTo) return { parent_type: undefined, parent_slug: undefined };
-  if (replyTo.type === "camp-session") {
-    return { parent_type: "study-log" as const, parent_slug: `camp-session/${replyTo.slug}` };
+  if (replyTo.type === "camp-session" || replyTo.type === "wall-climb") {
+    return { parent_type: "study-log" as const, parent_slug: `${replyTo.type}/${replyTo.slug}` };
   }
   return { parent_type: replyTo.type, parent_slug: replyTo.slug };
 }
@@ -128,6 +132,9 @@ function localReplyToFor(row: Pick<z.infer<typeof contentRowSchema>, "parent_typ
   if (!row.parent_type || !row.parent_slug) return undefined;
   if (row.parent_type === "study-log" && row.parent_slug.startsWith("camp-session/")) {
     return { type: "camp-session" as const, slug: row.parent_slug.replace(/^camp-session\//, "") };
+  }
+  if (row.parent_type === "study-log" && row.parent_slug.startsWith("wall-climb/")) {
+    return { type: "wall-climb" as const, slug: row.parent_slug.replace(/^wall-climb\//, "") };
   }
   return { type: row.parent_type, slug: row.parent_slug };
 }
@@ -140,14 +147,65 @@ function baseHrefForType(type: ContentType) {
   if (type === "press") return "/press";
   if (type === "topic") return "/topics";
   if (type === "camp-session") return "/camp-session";
+  if (type === "wall-climb") return "/wall-climb";
   return `/${type}`;
+}
+
+function decodeAttribute(value: string) {
+  return value
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function attributeFromHtml(html: string, name: string) {
+  const pattern = new RegExp(`${name}=["']([^"']+)["']`, "i");
+  const value = pattern.exec(html)?.[1];
+  return value ? decodeAttribute(value) : undefined;
+}
+
+function textFromHtml(html: string, marker: string) {
+  const pattern = new RegExp(`<[^>]+${marker}[^>]*>([\\s\\S]*?)<\\/[^>]+>`, "i");
+  const value = pattern.exec(html)?.[1];
+  return value
+    ? decodeAttribute(value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
+    : undefined;
+}
+
+function wallMetadataFromHtml(html: string) {
+  const sourceKind = attributeFromHtml(html, "data-source-kind");
+  return {
+    note: textFromHtml(html, "data-wall-note"),
+    sourceKind: sourceKind === "github" || sourceKind === "youtube" || sourceKind === "x" || sourceKind === "web" ? sourceKind : undefined,
+    sourceTitle: attributeFromHtml(html, "data-source-title"),
+    sourceUrl: attributeFromHtml(html, "data-source-url"),
+    summary: textFromHtml(html, "data-wall-summary"),
+  };
+}
+
+function publicTags(tags: readonly string[]) {
+  return tags.filter((tag) => tag !== internalPinnedTag);
+}
+
+function hasMissingPinnedColumnError(error: { readonly message?: string; readonly details?: string | null; readonly hint?: string | null }) {
+  const text = `${error.message ?? ""} ${error.details ?? ""} ${error.hint ?? ""}`.toLowerCase();
+  return text.includes("pinned") && (text.includes("column") || text.includes("schema cache"));
 }
 
 function rowToEntry(row: z.infer<typeof contentRowSchema>): ContentEntry {
   const contentFormat = row.content_format ?? "markdown";
   const createdAt = shortDate(row.created_at) ?? new Date().toISOString().slice(0, 10);
   const publishedAt = shortDate(row.published_at) ?? createdAt;
-  const type = row.type === "study-log" && row.category === "camp-session" ? "camp-session" : row.type;
+  const type = row.type === "study-log" && row.category === "camp-session"
+    ? "camp-session"
+    : row.type === "study-log" && row.category === "wall-climb"
+      ? "wall-climb"
+      : row.type;
+  const content = row.content?.trim() ?? "";
+  const wallMetadata = type === "wall-climb" ? wallMetadataFromHtml(content) : {};
+  const tags = row.tags ?? [];
 
   return {
     title: row.title,
@@ -159,12 +217,14 @@ function rowToEntry(row: z.infer<typeof contentRowSchema>): ContentEntry {
     author: row.author ?? "익명",
     memberSlug: row.member_slug ?? undefined,
     category: row.category ?? undefined,
-    tags: row.tags ?? [],
+    tags: publicTags(tags),
     createdAt,
     updatedAt: shortDate(row.updated_at),
     publishedAt,
-    content: row.content?.trim() ?? "",
+    content,
     excerpt: row.excerpt ?? "",
+    pinned: row.pinned ?? tags.includes(internalPinnedTag),
+    ...wallMetadata,
     replyTo: localReplyToFor(row),
     href: `${baseHrefForType(type)}/${row.slug}`.replace(/\/index$/, ""),
     pathSegments: row.slug.split("/").filter(Boolean),
@@ -210,15 +270,18 @@ export async function getRemoteEntriesByType(type: ContentType, { includeUnpubli
   const remoteType = remoteTypeFor(type);
   let query = supabase
     .from("content_index")
-    .select("slug, type, title, status, visibility, author, member_slug, category, tags, published_at, created_at, updated_at, content_format, content, excerpt, parent_type, parent_slug")
+    .select("slug, type, title, status, visibility, author, member_slug, category, tags, published_at, created_at, updated_at, content_format, content, excerpt, parent_type, parent_slug, pinned")
     .eq("type", remoteType)
+    .order("pinned", { ascending: false, nullsFirst: false })
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
 
   if (type === "camp-session") {
     query = query.eq("category", "camp-session");
+  } else if (type === "wall-climb") {
+    query = query.eq("category", "wall-climb");
   } else if (type === "study-log") {
-    query = query.or("category.is.null,category.neq.camp-session");
+    query = query.or("category.is.null,and(category.neq.camp-session,category.neq.wall-climb)");
   }
 
   if (!includeUnpublished && !canReadPrivateRows) {
@@ -227,9 +290,40 @@ export async function getRemoteEntriesByType(type: ContentType, { includeUnpubli
 
   const { data, error } = await query;
   if (error) {
+    const fallbackData = await getRemoteEntriesByTypeWithoutPinned(type, { includeUnpublished });
+    if (fallbackData) return fallbackData;
     markRemoteContentUnavailable();
     return [];
   }
+
+  return contentRowsSchema.parse(data ?? []).map(rowToEntry);
+}
+
+async function getRemoteEntriesByTypeWithoutPinned(type: ContentType, { includeUnpublished = false }: { includeUnpublished?: boolean } = {}) {
+  const canReadPrivateRows = hasServiceRoleKey();
+  const supabase = createReadClient();
+  const remoteType = remoteTypeFor(type);
+  let query = supabase
+    .from("content_index")
+    .select("slug, type, title, status, visibility, author, member_slug, category, tags, published_at, created_at, updated_at, content_format, content, excerpt, parent_type, parent_slug")
+    .eq("type", remoteType)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
+
+  if (type === "camp-session") {
+    query = query.eq("category", "camp-session");
+  } else if (type === "wall-climb") {
+    query = query.eq("category", "wall-climb");
+  } else if (type === "study-log") {
+    query = query.or("category.is.null,and(category.neq.camp-session,category.neq.wall-climb)");
+  }
+
+  if (!includeUnpublished && !canReadPrivateRows) {
+    query = query.eq("status", "published").eq("visibility", "public");
+  }
+
+  const { data, error } = await query;
+  if (error) return undefined;
 
   return contentRowsSchema.parse(data ?? []).map(rowToEntry);
 }
@@ -335,7 +429,7 @@ export async function deleteRemoteContent(type: ContentType, slug: string) {
       visibility: "public",
       author: "Admin",
       member_slug: "admin",
-      category: type === "camp-session" ? "camp-session" : "deleted",
+      category: type === "camp-session" || type === "wall-climb" ? type : "deleted",
       tags: [],
       published_at: now,
       content_format: "html",
@@ -347,4 +441,48 @@ export async function deleteRemoteContent(type: ContentType, slug: string) {
     }, { onConflict: "type,slug" });
 
   if (error) throw error;
+}
+
+export async function setRemoteContentPinned(type: ContentType, slug: string, pinned: boolean) {
+  if (!(await canUseRemoteContent({ requireWrite: true }))) {
+    throw new Error("Remote content storage is not configured.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("content_index")
+    .update({
+      pinned,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("type", remoteTypeFor(type))
+    .eq("slug", slug);
+
+  if (!error) return;
+  if (!hasMissingPinnedColumnError(error)) throw error;
+
+  const { data, error: readError } = await admin
+    .from("content_index")
+    .select("tags")
+    .eq("type", remoteTypeFor(type))
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (readError) throw readError;
+  const existingTagsSchema = z.object({ tags: z.array(z.string()).nullable() }).nullable();
+  const existingTags = existingTagsSchema.parse(data)?.tags ?? [];
+  const nextTags = pinned
+    ? [...new Set([...existingTags, internalPinnedTag])]
+    : existingTags.filter((tag) => tag !== internalPinnedTag);
+
+  const { error: tagError } = await admin
+    .from("content_index")
+    .update({
+      tags: nextTags,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("type", remoteTypeFor(type))
+    .eq("slug", slug);
+
+  if (tagError) throw tagError;
 }

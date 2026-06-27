@@ -115,10 +115,17 @@ All spacing derives from 4px.
 
 ### Feed Item
 
-- **Structure**: one bordered surface per post with category/date meta, title, excerpt, tags, and a compact open action.
+- **Structure**: one bordered surface per post with category/date meta, title, excerpt, tags, optional pinned state, and a compact open action.
 - **Spacing**: inner padding uses `--space-4`; stacked feed gap uses `--space-3`.
 - **States**: hover strengthens the border and title color without changing layout dimensions.
 - **Usage**: default post-list pattern for Topics, News Digest, Study Log, and home recent posts.
+
+### Wall Climb Item
+
+- **Structure**: three-part row with a compact external-link preview, the shared note, and a short AI summary.
+- **Spacing**: item padding uses `--space-4`; preview and summary panes use `--space-3` to `--space-4`.
+- **States**: preview card hover strengthens the border and opens the source link in a new tab.
+- **Usage**: 벽타기 link collection entries where the original link should stay one click away from the listing page.
 
 ### Community Header
 

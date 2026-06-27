@@ -66,10 +66,10 @@ function createAdminClient() {
   );
 }
 function remoteCommentType(type: RemoteCommentInput["contentType"]) {
-  return type === "camp-session" ? "study-log" : type;
+  return type === "camp-session" || type === "wall-climb" ? "study-log" : type;
 }
 function remoteCommentSlug(input: Pick<RemoteCommentInput, "contentType" | "contentSlug">) {
-  return input.contentType === "camp-session" ? `camp-session/${input.contentSlug}` : input.contentSlug;
+  return input.contentType === "camp-session" || input.contentType === "wall-climb" ? `${input.contentType}/${input.contentSlug}` : input.contentSlug;
 }
 export async function canUseRemoteComments() {
   const now = Date.now();

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { deleteContentPost, updateContentPost } from "@/app/admin/content/actions";
+import { deleteContentPost, togglePinnedContentPost, updateContentPost } from "@/app/admin/content/actions";
 import { SubmitButton } from "@/components/submit-button";
 import { requireAdmin } from "@/lib/auth";
 import { contentTypes, getEntryByTypeAndSlugAsync, type ContentType } from "@/lib/content";
@@ -31,10 +31,19 @@ export default async function AdminContentEditPage({ searchParams }: PageProps) 
         </Link>
         <p className="mt-8 text-xs font-semibold uppercase text-[#6d7280]">Admin Edit</p>
         <h1 className="mt-3 max-w-4xl break-words text-5xl font-medium tracking-[-0.055em] text-[#171717]">{entry.title}</h1>
+        <form action={togglePinnedContentPost} className="mt-5">
+          <input type="hidden" name="type" value={entry.type} />
+          <input type="hidden" name="slug" value={entry.slug} />
+          <input type="hidden" name="pinned" value={entry.pinned ? "true" : "false"} />
+          <button className={`inline-flex h-10 items-center rounded-full border px-4 text-sm font-semibold transition ${entry.pinned ? "border-[#ead99a] bg-[#fff4d6] text-[#8a5a00] hover:border-[#8a5a00]" : "border-[#e7e5dc] bg-white text-[#5b6270] hover:border-[#171717] hover:text-[#171717]"}`}>
+            {entry.pinned ? "상단 고정 해제" : "상단 고정"}
+          </button>
+        </form>
       </section>
       <form action={updateContentPost} className="grid gap-5 rounded-lg border border-[#e7e5dc] bg-white p-6 md:p-8">
         <input type="hidden" name="originalType" value={entry.type} />
         <input type="hidden" name="originalSlug" value={entry.slug} />
+        <input type="hidden" name="pinned" value={entry.pinned ? "true" : "false"} />
         <div className="grid gap-5 md:grid-cols-2">
           <label className="text-sm font-medium text-[#374151]">
             제목
@@ -49,6 +58,7 @@ export default async function AdminContentEditPage({ searchParams }: PageProps) 
             <select className="mt-2" name="type" defaultValue={entry.type} required>
               <option value="study-log">Study Log</option>
               <option value="camp-session">Camp Session</option>
+              <option value="wall-climb">벽타기</option>
               <option value="topic">Topics</option>
               <option value="press">News Digest</option>
               <option value="daily-review">Daily Review</option>
@@ -84,6 +94,7 @@ export default async function AdminContentEditPage({ searchParams }: PageProps) 
               <option value="">없음</option>
               <option value="study-log">Study Log</option>
               <option value="camp-session">Camp Session</option>
+              <option value="wall-climb">벽타기</option>
               <option value="topic">Topics</option>
               <option value="press">News Digest</option>
               <option value="daily-review">Daily Review</option>

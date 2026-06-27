@@ -9,7 +9,7 @@ The `/write` page is the direct community publishing path. It does not use the S
 
 Current behavior:
 
-- visitors choose the destination menu: `Study Log`, `Topics`, `News Digest`, or `Camp Session`
+- visitors choose the destination menu: `Study Log`, `Camp Session`, `벽타기`, or `News Digest`
 - visitors upload a Markdown or HTML file, or paste Markdown/HTML directly into the body field
 - visitors can paste a GitHub or YouTube link and ask the server to generate a structured Korean Markdown draft
 - Markdown uploads are converted into a standalone HTML document on the server
@@ -27,7 +27,9 @@ Production deployments must not rely on runtime writes to `content/`. Vercel Fun
 
 Apply `supabase/migrations/0008_public_content_posts.sql` when visitors should publish directly without logging in. It keeps public inserts constrained to published, public, bounded-size content rows. Admin edits and deletes use `SUPABASE_SERVICE_ROLE_KEY`; deletes write an `archived` tombstone so remote storage can hide local fallback content with the same `{type, slug}`. Tombstones are intentionally excluded from public listings and the admin content list.
 
-`Camp Session` is exposed as its own menu and route for bootcamp weekly learning materials. Until the Supabase `content_type` enum is expanded, remote storage maps those rows to `type = study-log` with `category = camp-session`, then converts them back to `camp-session` in the app. The same compatibility mapping is used for Camp Session comments.
+Apply `supabase/migrations/0009_content_index_pinned.sql` before using admin post pinning in production. It adds `content_index.pinned`, which lets admins star a post and keep it at the top of board listings.
+
+`Camp Session` is exposed as its own menu and route for bootcamp weekly learning materials. `벽타기` is exposed as a link-collection route for chat-room links and short notes. Until the Supabase `content_type` enum is expanded, remote storage maps both rows to `type = study-log` with `category = camp-session` or `category = wall-climb`, then converts them back in the app. The same compatibility mapping is used for comments.
 
 ## Admin content management
 
@@ -42,6 +44,7 @@ The admin content screen supports:
 
 - listing manageable content, excluding deleted tombstone records
 - editing title, slug, destination menu, author, category, tags, body, excerpt, and `replyTo`
+- starring or unstarring a post so it is pinned above normal posts in board listings
 - deleting content through an archived remote tombstone in production
 - local development writes to the matching file under `content/`
 

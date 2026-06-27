@@ -1,14 +1,15 @@
 "use server";
 
-import { access, mkdir, unlink, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import matter from "gray-matter";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { contentTypes, type ContentType } from "@/lib/content";
 import { markdownToHtmlDocument } from "@/lib/markdown-to-html";
-import { canUseRemoteContent, deleteRemoteContent, updateRemoteContent } from "@/lib/remote-content-store";
+import { canUseRemoteContent, deleteRemoteContent, setRemoteContentPinned, updateRemoteContent } from "@/lib/remote-content-store";
 
 const contentDirByType: Record<ContentType, string> = {
   press: "press",
@@ -16,6 +17,7 @@ const contentDirByType: Record<ContentType, string> = {
   "daily-review": "daily-review",
   "study-log": "study-log",
   "camp-session": "camp-session",
+  "wall-climb": "wall-climb",
   teach: "teach",
 };
 
@@ -31,6 +33,7 @@ const contentInputSchema = z.object({
   sourceFormat: z.enum(["markdown", "html"]),
   sourceContent: z.string().trim().min(1).max(500000),
   excerpt: z.string().trim().max(240).optional().or(z.literal("")),
+  pinned: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
   parentType: z.enum(contentTypes).optional().or(z.literal("")),
   parentSlug: z.string().trim().max(160).optional().or(z.literal("")),
 });
@@ -38,6 +41,12 @@ const contentInputSchema = z.object({
 const deleteInputSchema = z.object({
   type: z.enum(contentTypes),
   slug: z.string().trim().min(1).max(160),
+});
+
+const pinInputSchema = z.object({
+  type: z.enum(contentTypes),
+  slug: z.string().trim().min(1).max(160),
+  pinned: z.enum(["true", "false"]).transform((value) => value === "true"),
 });
 
 function rootContentDir() {
@@ -90,6 +99,7 @@ function hrefForType(type: ContentType, slug: string) {
   if (type === "press") return `/press/${slug}`;
   if (type === "topic") return `/topics/${slug}`;
   if (type === "camp-session") return `/camp-session/${slug}`;
+  if (type === "wall-climb") return `/wall-climb/${slug}`;
   return `/${type}/${slug}`;
 }
 
@@ -131,6 +141,7 @@ function buildContentFile(input: z.infer<typeof contentInputSchema> & { readonly
     `createdAt: ${quoteYamlString(now)}`,
     `updatedAt: ${quoteYamlString(now)}`,
     `publishedAt: ${quoteYamlString(now)}`,
+    input.pinned ? "pinned: true" : undefined,
     replyTo,
     `excerpt: ${quoteYamlString(input.excerpt || excerptFromContent(input.html) || "게시글입니다.")}`,
     "---",
@@ -157,6 +168,20 @@ async function deleteLocalContent(type: ContentType, slug: string) {
   await unlink(filePath);
 }
 
+async function setLocalContentPinned(type: ContentType, slug: string, pinned: boolean) {
+  const filePath = await findLocalContentPath(type, slug);
+  if (!filePath) return;
+
+  const raw = await readFile(filePath, "utf8");
+  const parsed = matter(raw);
+  const data = {
+    ...parsed.data,
+    pinned,
+  };
+
+  await writeFile(filePath, matter.stringify(parsed.content.trim(), data), "utf8");
+}
+
 export async function updateContentPost(formData: FormData) {
   await requireAdmin();
 
@@ -172,6 +197,7 @@ export async function updateContentPost(formData: FormData) {
     sourceFormat: formData.get("sourceFormat"),
     sourceContent: formData.get("sourceContent"),
     excerpt: formData.get("excerpt"),
+    pinned: formData.get("pinned") ?? "false",
     parentType: formData.get("parentType"),
     parentSlug: formData.get("parentSlug"),
   });
@@ -194,6 +220,7 @@ export async function updateContentPost(formData: FormData) {
     tags: tagsList,
     excerpt: input.excerpt || excerptFromContent(html) || "게시글입니다.",
     html,
+    pinned: input.pinned,
     replyTo,
   };
 
@@ -241,4 +268,35 @@ export async function deleteContentPost(formData: FormData) {
   revalidatePath("/");
   revalidatePath(hrefForType(parsed.data.type, parsed.data.slug));
   redirect("/admin/content?status=deleted");
+}
+
+export async function togglePinnedContentPost(formData: FormData) {
+  await requireAdmin();
+
+  const parsed = pinInputSchema.safeParse({
+    type: formData.get("type"),
+    slug: formData.get("slug"),
+    pinned: formData.get("pinned"),
+  });
+
+  if (!parsed.success) redirect("/admin/content?error=invalid-pin");
+
+  const nextPinned = !parsed.data.pinned;
+
+  if (await canUseRemoteContent({ requireWrite: true })) {
+    try {
+      await setRemoteContentPinned(parsed.data.type, parsed.data.slug, nextPinned);
+    } catch (error) {
+      console.error(error);
+      if (process.env.VERCEL) redirect("/admin/content?error=remote-pin");
+    }
+  }
+
+  if (!process.env.VERCEL) {
+    await setLocalContentPinned(parsed.data.type, parsed.data.slug, nextPinned);
+  }
+
+  revalidatePath("/");
+  revalidatePath(hrefForType(parsed.data.type, parsed.data.slug));
+  redirect("/admin/content?status=pinned");
 }
