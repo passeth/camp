@@ -21,7 +21,7 @@ export function WallClimbList({ entries }: { readonly entries: readonly ContentE
 
         return (
           <article key={`${entry.type}:${entry.slug}`} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
-            <div className="grid gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
+            <div className="grid gap-4 md:grid-cols-[320px_minmax(0,1fr)]">
               <WallLinkPreview entry={entry} />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[var(--muted)]">

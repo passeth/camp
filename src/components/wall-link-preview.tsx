@@ -12,6 +12,19 @@ function youtubeId(value?: string) {
   }
 }
 
+function githubPreviewImage(value?: string) {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    if (url.hostname !== "github.com" && url.hostname !== "www.github.com") return undefined;
+    const [owner, repo] = url.pathname.split("/").filter(Boolean);
+    if (!owner || !repo) return undefined;
+    return `https://opengraph.githubassets.com/camp/${encodeURIComponent(owner)}/${encodeURIComponent(repo.replace(/\.git$/i, ""))}`;
+  } catch {
+    return undefined;
+  }
+}
+
 function hostLabel(value?: string) {
   if (!value) return "link";
   try {
@@ -28,34 +41,48 @@ function kindLabel(kind?: ContentEntry["sourceKind"]) {
   return "Link";
 }
 
+function visualLabel(kind?: ContentEntry["sourceKind"]) {
+  if (kind === "github") return "repository";
+  if (kind === "x") return "post preview";
+  return "link preview";
+}
+
 export function WallLinkPreview({ entry }: { readonly entry: ContentEntry }) {
   const href = entry.sourceUrl ?? entry.href;
   const label = entry.sourceTitle ?? entry.title;
+  const description = entry.summary ?? entry.excerpt;
+  const host = hostLabel(entry.sourceUrl);
   const videoId = youtubeId(entry.sourceUrl);
+  const imageSrc = entry.sourceImage
+    ?? githubPreviewImage(entry.sourceUrl)
+    ?? (videoId ? `https://img.youtube.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg` : undefined);
 
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="group block overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] transition hover:border-[var(--foreground)]"
+      className="group block overflow-hidden rounded-lg border border-[#2f2f2f] bg-[#333] shadow-sm transition hover:translate-y-[-1px] hover:border-[#555]"
     >
-      {videoId ? (
-        <div className="aspect-video w-full overflow-hidden bg-[#171717]">
-          <img
-            src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
-            alt=""
-            width={480}
-            height={360}
-            className="h-full w-full object-cover transition group-hover:scale-[1.02]"
-            loading="lazy"
-          />
+      {imageSrc ? (
+        <div
+          className="aspect-video w-full bg-[#171717] bg-cover bg-center transition group-hover:scale-[1.02]"
+          style={{ backgroundImage: `url(${imageSrc})` }}
+          aria-label={label}
+        />
+      ) : (
+        <div className="aspect-video w-full bg-[#111] p-4 text-white">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#8b93a3]">{kindLabel(entry.sourceKind)}</p>
+          <div className="mt-6 border-l border-t border-[#4f8cff] pl-3 pt-3">
+            <p className="text-xs uppercase tracking-[0.16em] text-[#8b93a3]">{visualLabel(entry.sourceKind)}</p>
+            <p className="mt-2 line-clamp-2 text-lg font-semibold leading-tight">{label}</p>
+          </div>
         </div>
-      ) : null}
-      <div className="p-3">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">{kindLabel(entry.sourceKind)}</p>
-        <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-[var(--foreground)]">{label}</p>
-        <p className="mt-1 truncate text-xs text-[var(--muted)]">{hostLabel(entry.sourceUrl)}</p>
+      )}
+      <div className="p-4">
+        <p className="line-clamp-2 text-lg font-semibold leading-tight tracking-[-0.03em] text-white">{label}</p>
+        {description ? <p className="mt-3 line-clamp-2 text-sm leading-6 text-[#b8b8b8]">{description}</p> : null}
+        <p className="mt-3 truncate text-sm font-semibold text-[#54a3ff]">{host}</p>
       </div>
     </a>
   );

@@ -19,6 +19,7 @@ type SourceKind = "github" | "youtube" | "x" | "web";
 type SourceContext = {
   readonly canonicalUrl: string;
   readonly description?: string;
+  readonly imageUrl?: string;
   readonly kind: SourceKind;
   readonly text: string;
   readonly title: string;
@@ -59,14 +60,37 @@ function cleanText(value: string) {
     .trim();
 }
 
+function htmlAttribute(tag: string, name: string) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const value = new RegExp(`${escaped}=["']([^"']+)["']`, "i").exec(tag)?.[1]?.trim();
+  return value
+    ?.replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, "\"");
+}
+
 function htmlMeta(html: string, property: string) {
-  const escaped = property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(`<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"']+)["'][^>]*>`, "i");
-  return pattern.exec(html)?.[1]?.trim();
+  const tags = html.match(/<meta[^>]+>/gi) ?? [];
+  const tag = tags.find((candidate) => {
+    const key = htmlAttribute(candidate, "property") ?? htmlAttribute(candidate, "name");
+    return key?.toLowerCase() === property.toLowerCase();
+  });
+  return tag ? htmlAttribute(tag, "content") : undefined;
 }
 
 function htmlTitle(html: string) {
   return htmlMeta(html, "og:title") ?? /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1]?.trim();
+}
+
+function absoluteUrl(value: string | undefined, base: URL) {
+  if (!value) return undefined;
+  try {
+    return new URL(value, base).toString();
+  } catch {
+    return undefined;
+  }
 }
 
 function youtubeVideoId(url: URL) {
@@ -133,6 +157,7 @@ async function githubSource(url: URL): Promise<SourceContext | undefined> {
   return {
     canonicalUrl: repoData.html_url,
     description: repoData.description ?? undefined,
+    imageUrl: `https://opengraph.githubassets.com/camp/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}`,
     kind: "github",
     text: [
       `Repository: ${repoData.full_name}`,
@@ -160,15 +185,32 @@ async function youtubeSource(url: URL): Promise<SourceContext | undefined> {
   return {
     canonicalUrl,
     description: `${oembed.provider_name} 영상`,
+    imageUrl: `https://img.youtube.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`,
     kind: "youtube",
     text: [`Title: ${oembed.title}`, `Channel: ${oembed.author_name}`, `URL: ${canonicalUrl}`].join("\n"),
     title: oembed.title,
   };
 }
 
-function xSource(url: URL): SourceContext | undefined {
+async function xSource(url: URL): Promise<SourceContext | undefined> {
   if (!isXUrl(url)) return undefined;
   const author = url.pathname.split("/").filter(Boolean)[0];
+  try {
+    const html = await fetchText(url.toString());
+    return {
+      canonicalUrl: url.toString(),
+      description: htmlMeta(html, "og:description") ?? htmlMeta(html, "twitter:description") ?? "X 링크",
+      imageUrl: absoluteUrl(htmlMeta(html, "og:image") ?? htmlMeta(html, "twitter:image"), url),
+      kind: "x",
+      text: cleanText(html).slice(0, 3_000),
+      title: htmlTitle(html) ?? (author ? `X post by @${author}` : "X post"),
+    };
+  } catch {
+    return xFallbackSource(url, author);
+  }
+}
+
+function xFallbackSource(url: URL, author: string | undefined): SourceContext {
   return {
     canonicalUrl: url.toString(),
     description: "X 링크",
@@ -182,9 +224,11 @@ async function webSource(url: URL): Promise<SourceContext> {
   const html = await fetchText(url.toString());
   const title = htmlTitle(html) ?? url.hostname.replace(/^www\./, "");
   const description = htmlMeta(html, "description") ?? htmlMeta(html, "og:description");
+  const imageUrl = absoluteUrl(htmlMeta(html, "og:image") ?? htmlMeta(html, "twitter:image"), url);
   return {
     canonicalUrl: url.toString(),
     description,
+    imageUrl,
     kind: "web",
     text: cleanText(html).slice(0, 5_000),
     title,
@@ -192,7 +236,7 @@ async function webSource(url: URL): Promise<SourceContext> {
 }
 
 async function sourceForUrl(url: URL) {
-  return await githubSource(url) ?? await youtubeSource(url) ?? xSource(url) ?? await webSource(url);
+  return await githubSource(url) ?? await youtubeSource(url) ?? await xSource(url) ?? await webSource(url);
 }
 
 async function summarize(source: SourceContext, note: string) {
@@ -209,18 +253,18 @@ async function summarize(source: SourceContext, note: string) {
       messages: [
         {
           role: "system",
-          content: "Return only valid JSON with keys title and summary. Write compact Korean for a link collection list. Do not invent facts.",
+          content: "Return only valid JSON with keys title and summary. Write compact Korean for a shared-link board. Analyze the linked source itself: its metadata, title, description, and available source context. The user's shared note is only optional context and must not become the main subject. Do not invent facts.",
         },
         {
           role: "user",
           content: [
-            `Shared note: ${note}`,
+            `User shared note, optional context only: ${note}`,
             `Source kind: ${source.kind}`,
             `URL: ${source.canonicalUrl}`,
             `Title: ${source.title}`,
             source.description ? `Description: ${source.description}` : undefined,
             "",
-            "Create a clear Korean title and a one-sentence summary under 180 Korean characters.",
+            "Create a Korean title and one-sentence summary under 180 Korean characters based on the linked source. The summary should explain what the link is about, not analyze the user's comment.",
             "",
             source.text,
           ].filter(Boolean).join("\n"),
@@ -256,9 +300,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       summary: {
         canonicalUrl: source.canonicalUrl,
+        imageUrl: source.imageUrl,
         kind: source.kind,
         summary: summary.summary,
-        title: summary.title || source.title,
+        title: source.title,
       },
     });
   } catch (error) {

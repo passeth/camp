@@ -12,6 +12,7 @@ const wallInputSchema = z.object({
   canonicalUrl: z.string().trim().url().max(2_000).optional().or(z.literal("")),
   note: z.string().trim().min(1).max(2_000),
   sourceKind: z.enum(["github", "youtube", "x", "web"]).optional().or(z.literal("")),
+  sourceImage: z.string().trim().url().max(2_000).optional().or(z.literal("")),
   sourceTitle: z.string().trim().min(1).max(160).optional().or(z.literal("")),
   sourceUrl: z.string().trim().url().max(2_000),
   summary: z.string().trim().min(1).max(500).optional().or(z.literal("")),
@@ -31,6 +32,36 @@ function titleFromNote(value: string) {
     .map((line) => line.trim())
     .find(Boolean)
     ?.slice(0, 80) || value.trim().slice(0, 80) || "벽타기 링크";
+}
+
+function githubPreviewImage(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.hostname !== "github.com" && url.hostname !== "www.github.com") return undefined;
+    const [owner, repo] = url.pathname.split("/").filter(Boolean);
+    if (!owner || !repo) return undefined;
+    return `https://opengraph.githubassets.com/camp/${encodeURIComponent(owner)}/${encodeURIComponent(repo.replace(/\.git$/i, ""))}`;
+  } catch {
+    return undefined;
+  }
+}
+
+function youtubePreviewImage(value: string) {
+  try {
+    const url = new URL(value);
+    const videoId = url.hostname === "youtu.be"
+      ? url.pathname.split("/").filter(Boolean)[0]
+      : url.hostname.endsWith("youtube.com")
+        ? url.searchParams.get("v") ?? url.pathname.match(/\/shorts\/([^/?#]+)/)?.[1]
+        : undefined;
+    return videoId ? `https://img.youtube.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg` : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function fallbackPreviewImage(value: string) {
+  return githubPreviewImage(value) ?? youtubePreviewImage(value);
 }
 
 function quoteYamlString(value: string) {
@@ -78,6 +109,7 @@ function nextSlugCandidate(baseSlug: string, attempt: number) {
 function htmlForWallEntry(input: {
   readonly note: string;
   readonly sourceKind: "github" | "youtube" | "x" | "web";
+  readonly sourceImage?: string;
   readonly sourceTitle: string;
   readonly sourceUrl: string;
   readonly summary: string;
@@ -102,7 +134,7 @@ function htmlForWallEntry(input: {
     "</head>",
     "<body>",
     "  <main>",
-    `    <article class="wall-climb-entry" data-source-url="${escapeHtml(input.sourceUrl)}" data-source-title="${escapeHtml(input.sourceTitle)}" data-source-kind="${input.sourceKind}">`,
+    `    <article class="wall-climb-entry" data-source-url="${escapeHtml(input.sourceUrl)}" data-source-title="${escapeHtml(input.sourceTitle)}" data-source-kind="${input.sourceKind}"${input.sourceImage ? ` data-source-image="${escapeHtml(input.sourceImage)}"` : ""}>`,
     "      <section>",
     "        <p class=\"label\">Original link</p>",
     `        <a href="${escapeHtml(input.sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(input.sourceTitle)}</a>`,
@@ -128,6 +160,7 @@ function contentFile(input: {
   readonly note: string;
   readonly slug: string;
   readonly sourceKind: "github" | "youtube" | "x" | "web";
+  readonly sourceImage?: string;
   readonly sourceTitle: string;
   readonly sourceUrl: string;
   readonly summary: string;
@@ -150,13 +183,14 @@ function contentFile(input: {
     `updatedAt: ${quoteYamlString(now)}`,
     `publishedAt: ${quoteYamlString(now)}`,
     `sourceUrl: ${quoteYamlString(input.sourceUrl)}`,
+    input.sourceImage ? `sourceImage: ${quoteYamlString(input.sourceImage)}` : undefined,
     `sourceTitle: ${quoteYamlString(input.sourceTitle)}`,
     `sourceKind: ${quoteYamlString(input.sourceKind)}`,
     `note: ${quoteYamlString(input.note)}`,
     `summary: ${quoteYamlString(input.summary)}`,
     `excerpt: ${quoteYamlString(input.summary)}`,
     "---",
-  ];
+  ].filter(Boolean);
 
   return `${frontmatter.join("\n")}\n\n${input.html}\n`;
 }
@@ -167,6 +201,7 @@ export async function createWallClimbPost(formData: FormData) {
     canonicalUrl: formData.get("canonicalUrl"),
     note: formData.get("note"),
     sourceKind: formData.get("sourceKind"),
+    sourceImage: formData.get("sourceImage"),
     sourceTitle: formData.get("sourceTitle"),
     sourceUrl: formData.get("sourceUrl"),
     summary: formData.get("summary"),
@@ -177,6 +212,7 @@ export async function createWallClimbPost(formData: FormData) {
   const input = parsed.data;
   const sourceUrl = input.canonicalUrl || input.sourceUrl;
   const sourceKind = input.sourceKind || "web";
+  const sourceImage = input.sourceImage || fallbackPreviewImage(sourceUrl);
   const sourceTitle = input.sourceTitle || sourceUrl;
   const summary = input.summary || input.note;
   const title = titleFromNote(input.note);
@@ -185,6 +221,7 @@ export async function createWallClimbPost(formData: FormData) {
   const html = htmlForWallEntry({
     note: input.note,
     sourceKind,
+    sourceImage,
     sourceTitle,
     sourceUrl,
     summary,
@@ -235,6 +272,7 @@ export async function createWallClimbPost(formData: FormData) {
       note: input.note,
       slug: finalSlug,
       sourceKind,
+      sourceImage,
       sourceTitle,
       sourceUrl,
       summary,

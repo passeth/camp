@@ -178,6 +178,7 @@ function wallMetadataFromHtml(html: string) {
   const sourceKind = attributeFromHtml(html, "data-source-kind");
   return {
     note: textFromHtml(html, "data-wall-note"),
+    sourceImage: attributeFromHtml(html, "data-source-image"),
     sourceKind: sourceKind === "github" || sourceKind === "youtube" || sourceKind === "x" || sourceKind === "web" ? sourceKind : undefined,
     sourceTitle: attributeFromHtml(html, "data-source-title"),
     sourceUrl: attributeFromHtml(html, "data-source-url"),

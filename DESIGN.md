@@ -122,10 +122,10 @@ All spacing derives from 4px.
 
 ### Wall Climb Item
 
-- **Structure**: three-part row with a compact external-link preview, the shared note, and a short AI summary.
-- **Spacing**: item padding uses `--space-4`; preview and summary panes use `--space-3` to `--space-4`.
+- **Structure**: two-part row with an external-link preview card and a shared-note summary. The preview card uses the source link's provided image metadata when available, with title, description, and host below the image.
+- **Spacing**: item padding uses `--space-4`; preview content uses `--space-4`.
 - **States**: preview card hover strengthens the border and opens the source link in a new tab.
-- **Usage**: 벽타기 link collection entries where the original link should stay one click away from the listing page.
+- **Usage**: 벽타기 link collection entries where the original link should stay one click away from the listing page while preserving the link's native preview image.
 
 ### Community Header
 

@@ -6,6 +6,7 @@ import type { createWallClimbPost } from "@/app/wall-climb/actions";
 
 type WallSummary = {
   readonly canonicalUrl: string;
+  readonly imageUrl?: string;
   readonly kind: "github" | "youtube" | "x" | "web";
   readonly summary: string;
   readonly title: string;
@@ -40,6 +41,7 @@ export function WallClimbForm({ action }: { readonly action: typeof createWallCl
     <form id="wall-form" action={action} className="grid gap-4 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 md:p-5">
       <input type="hidden" name="summary" value={summary?.summary ?? ""} />
       <input type="hidden" name="sourceTitle" value={summary?.title ?? ""} />
+      <input type="hidden" name="sourceImage" value={summary?.imageUrl ?? ""} />
       <input type="hidden" name="sourceKind" value={summary?.kind ?? ""} />
       <input type="hidden" name="canonicalUrl" value={summary?.canonicalUrl ?? ""} />
       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">

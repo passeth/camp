@@ -45,6 +45,7 @@ const frontmatterSchema = z.object({
   excerpt: z.string().optional(),
   pinned: z.boolean().default(false),
   sourceUrl: z.string().url().optional(),
+  sourceImage: z.string().url().optional(),
   sourceTitle: z.string().optional(),
   sourceKind: z.enum(["github", "youtube", "x", "web"]).optional(),
   note: z.string().optional(),
