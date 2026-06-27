@@ -208,6 +208,7 @@ export async function createPublishPost(formData: FormData) {
     : undefined;
 
   if (await canUseRemoteContent({ requireWrite: true })) {
+    let remotePublished = false;
     try {
       await createRemoteContent({
         title: submission.title,
@@ -221,11 +222,15 @@ export async function createPublishPost(formData: FormData) {
         html: submission.html,
         replyTo,
       });
+      remotePublished = true;
     } catch (error) {
       console.error(error);
-      if (process.env.VERCEL) redirect("/write?error=remote-publish");
     }
-    if (process.env.VERCEL) redirect(hrefForType(submission.type, submission.slug));
+    if (process.env.VERCEL) {
+      redirect(remotePublished ? hrefForType(submission.type, submission.slug) : "/write?error=remote-publish");
+    }
+  } else if (process.env.VERCEL) {
+    redirect("/write?error=remote-publish");
   }
 
   const filePath = contentPath(submission.type, submission.slug);
