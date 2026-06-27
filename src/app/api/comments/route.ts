@@ -99,8 +99,12 @@ export async function DELETE(request: NextRequest) {
       const result = await deleteRemoteComment(parsed.data);
       if (result.deleted) return NextResponse.json({ deleted: true });
       return NextResponse.json({ error: "비밀번호가 맞지 않거나 댓글을 찾을 수 없습니다." }, { status: 403 });
-    } catch {
+    } catch (error) {
+      console.error(error);
       markRemoteCommentsUnavailable();
+      if (process.env.VERCEL) {
+        return NextResponse.json({ error: "댓글 삭제 설정을 확인해야 합니다." }, { status: 500 });
+      }
     }
   }
 
