@@ -45,15 +45,25 @@ export function WallClimbForm({ action }: { readonly action: typeof createWallCl
       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
         <label className="text-sm font-medium text-[#374151]">
           링크
-          <input
-            className="mt-2"
-            name="sourceUrl"
-            type="url"
-            required
-            placeholder="https://youtube.com/... 또는 https://github.com/..."
-            value={sourceUrl}
-            onChange={(event) => setSourceUrl(event.target.value)}
-          />
+          <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <input
+              className="min-w-0"
+              name="sourceUrl"
+              type="url"
+              required
+              placeholder="https://youtube.com/... 또는 https://github.com/..."
+              value={sourceUrl}
+              onChange={(event) => setSourceUrl(event.target.value)}
+            />
+            <button
+              type="button"
+              onClick={summarize}
+              disabled={isSummarizing || !sourceUrl.trim() || !note.trim()}
+              className="inline-flex h-12 items-center justify-center rounded-xl border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSummarizing ? "요약 중..." : "요약"}
+            </button>
+          </div>
         </label>
         <label className="text-sm font-medium text-[#374151]">
           작성자
@@ -63,7 +73,7 @@ export function WallClimbForm({ action }: { readonly action: typeof createWallCl
       <label className="text-sm font-medium text-[#374151]">
         공유 멘트
         <textarea
-          className="mt-2 min-h-28 text-sm leading-6"
+          className="mt-2 h-20 !min-h-20 text-sm leading-6 md:h-24 md:!min-h-24"
           name="note"
           required
           placeholder="채팅방에 함께 올라온 멘트나 내가 남기고 싶은 맥락을 적어주세요."
@@ -79,15 +89,7 @@ export function WallClimbForm({ action }: { readonly action: typeof createWallCl
         </section>
       ) : null}
       {message ? <p className="text-sm text-[var(--muted)]">{message}</p> : null}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-        <button
-          type="button"
-          onClick={summarize}
-          disabled={isSummarizing || !sourceUrl.trim() || !note.trim()}
-          className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isSummarizing ? "요약 중..." : "요약"}
-        </button>
+      <div className="flex justify-end">
         <SubmitButton pendingText="게시 중...">벽타기 등록</SubmitButton>
       </div>
     </form>

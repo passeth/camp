@@ -25,6 +25,14 @@ function slugify(value: string) {
     .slice(0, 80) || "wall-link";
 }
 
+function titleFromNote(value: string) {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find(Boolean)
+    ?.slice(0, 80) || value.trim().slice(0, 80) || "벽타기 링크";
+}
+
 function quoteYamlString(value: string) {
   return JSON.stringify(value);
 }
@@ -171,8 +179,8 @@ export async function createWallClimbPost(formData: FormData) {
   const sourceKind = input.sourceKind || "web";
   const sourceTitle = input.sourceTitle || sourceUrl;
   const summary = input.summary || input.note;
-  const title = sourceTitle;
-  const baseSlug = slugify(sourceTitle);
+  const title = titleFromNote(input.note);
+  const baseSlug = slugify(title);
   const slug = await uniqueSlug(baseSlug);
   const html = htmlForWallEntry({
     note: input.note,

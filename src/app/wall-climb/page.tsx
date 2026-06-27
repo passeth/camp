@@ -1,5 +1,5 @@
 import { SectionHeader } from "@/components/section-header";
-import { WallClimbForm } from "@/components/wall-climb-form";
+import { WallClimbComposer } from "@/components/wall-climb-composer";
 import { WallClimbList } from "@/components/wall-climb-list";
 import { getEntriesByTypeAsync } from "@/lib/content";
 import { filterEntriesByTag } from "@/lib/tags";
@@ -20,13 +20,7 @@ export default async function WallClimbPage({ searchParams }: PageProps) {
         {params.status === "published" ? <p className="mt-4 rounded-lg bg-[var(--surface-soft)] px-4 py-3 text-sm text-[var(--foreground)]">벽타기 링크가 등록되었습니다.</p> : null}
         {params.error ? <p className="mt-4 rounded-lg bg-[var(--status-warning-bg)] px-4 py-3 text-sm text-[var(--status-warning-text)]">입력값이나 저장소 설정을 확인해 주세요.</p> : null}
       </section>
-      <SectionHeader
-        eyebrow="Quick share"
-        title="링크 올리기"
-        description="멘트와 링크를 넣고 요약을 누르면 DeepSeek이 리스트용 요약을 만듭니다."
-      />
-      <WallClimbForm action={createWallClimbPost} />
-      <SectionHeader eyebrow="Collected links" title="링크 모음" description="작은 배너는 원문 링크로 바로 이동합니다." />
+      <SectionHeader eyebrow="Collected links" title="링크 모음" action={<WallClimbComposer action={createWallClimbPost} />} />
       <WallClimbList entries={entries} />
     </div>
   );
