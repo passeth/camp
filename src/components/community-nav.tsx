@@ -8,6 +8,7 @@ const navItems = [
   { label: "Topics", href: "/topics" },
   { label: "News Digest", href: "/press" },
   { label: "Study Log", href: "/study-log" },
+  { label: "Camp Session", href: "/camp-session" },
 ] as const;
 
 type CommunityNavProps = {

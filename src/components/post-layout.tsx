@@ -83,19 +83,19 @@ export async function PostLayout({ entry, backHref, backLabel }: PostLayoutProps
               <Link key={tag} href={tagHref(tag, entry.type)} className="rounded-full bg-white px-2.5 py-1 text-xs text-[#5b6270] transition hover:text-[#171717]">#{tag}</Link>
             ))}
           </div>
-          <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto md:shrink-0">
+          <div className="flex w-full flex-wrap gap-2 md:w-auto md:shrink-0 md:justify-end">
             {showAdminControls ? (
               <>
                 <Link
                   href={adminEditHref(entry)}
-                  className="inline-flex justify-center whitespace-nowrap rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)]"
+                  className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-full border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)] hover:bg-[var(--surface-soft)]"
                 >
                   수정
                 </Link>
                 <form action={deleteContentPost}>
                   <input type="hidden" name="type" value={entry.type} />
                   <input type="hidden" name="slug" value={entry.slug} />
-                  <button className="w-full rounded-full border border-[var(--foreground)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:bg-[var(--surface-soft)]">
+                  <button className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-full border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)] hover:bg-[var(--surface-soft)]">
                     삭제
                   </button>
                 </form>
@@ -103,7 +103,7 @@ export async function PostLayout({ entry, backHref, backLabel }: PostLayoutProps
             ) : null}
             <a
               href="#comments"
-              className="inline-flex justify-center whitespace-nowrap rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)]"
+              className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-full border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)] hover:bg-[var(--surface-soft)]"
             >
               댓글로 이동
             </a>

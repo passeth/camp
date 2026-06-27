@@ -9,7 +9,7 @@ The `/write` page is the direct community publishing path. It does not use the S
 
 Current behavior:
 
-- visitors choose the destination menu: `Study Log`, `Topics`, or `News Digest`
+- visitors choose the destination menu: `Study Log`, `Topics`, `News Digest`, or `Camp Session`
 - visitors upload a Markdown or HTML file
 - visitors can paste a GitHub or YouTube link and ask the server to generate a structured Korean Markdown draft
 - Markdown uploads are converted into a standalone HTML document on the server
@@ -24,7 +24,9 @@ This path is intentionally separate from the Obsidian plugin PR flow below.
 
 Production deployments must not rely on runtime writes to `content/`. Vercel Functions only provide temporary writable filesystem space, so deployed community uploads need persistent storage. Apply `supabase/migrations/0006_content_index_body.sql` before enabling immediate public uploads in production; it adds `content_format`, `content`, and `excerpt` to `content_index`. Apply `supabase/migrations/0007_content_index_reply_links.sql` as well before enabling post-as-reply links in production; it adds `parent_type` and `parent_slug`.
 
-Apply `supabase/migrations/0008_public_content_posts.sql` when visitors should publish directly without logging in. It keeps public inserts constrained to published, public, bounded-size content rows. Admin edits and deletes use `SUPABASE_SERVICE_ROLE_KEY`; deletes write an `archived` tombstone so remote storage can hide local fallback content with the same `{type, slug}`.
+Apply `supabase/migrations/0008_public_content_posts.sql` when visitors should publish directly without logging in. It keeps public inserts constrained to published, public, bounded-size content rows. Admin edits and deletes use `SUPABASE_SERVICE_ROLE_KEY`; deletes write an `archived` tombstone so remote storage can hide local fallback content with the same `{type, slug}`. Tombstones are intentionally excluded from public listings and the admin content list.
+
+`Camp Session` is exposed as its own menu and route for bootcamp weekly learning materials. Until the Supabase `content_type` enum is expanded, remote storage maps those rows to `type = study-log` with `category = camp-session`, then converts them back to `camp-session` in the app. The same compatibility mapping is used for Camp Session comments.
 
 ## Admin content management
 
@@ -37,7 +39,7 @@ The password-only path requires `ADMIN_PASSWORD` in the deployment environment. 
 
 The admin content screen supports:
 
-- listing published and archived content
+- listing manageable content, excluding deleted tombstone records
 - editing title, slug, destination menu, author, category, tags, body, excerpt, and `replyTo`
 - deleting content through an archived remote tombstone in production
 - local development writes to the matching file under `content/`

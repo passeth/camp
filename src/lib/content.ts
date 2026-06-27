@@ -4,7 +4,7 @@ import matter from "gray-matter";
 import { z } from "zod";
 import { getRemoteEntriesByType } from "@/lib/remote-content-store";
 
-export const contentTypes = ["press", "topic", "daily-review", "study-log", "teach"] as const;
+export const contentTypes = ["press", "topic", "daily-review", "study-log", "camp-session", "teach"] as const;
 export type ContentType = (typeof contentTypes)[number];
 
 const contentDirByType: Record<ContentType, string> = {
@@ -12,6 +12,7 @@ const contentDirByType: Record<ContentType, string> = {
   topic: "topics",
   "daily-review": "daily-review",
   "study-log": "study-log",
+  "camp-session": "camp-session",
   teach: "teach",
 };
 
@@ -20,6 +21,7 @@ const baseHrefByType: Record<ContentType, string> = {
   topic: "/topics",
   "daily-review": "/daily-review",
   "study-log": "/study-log",
+  "camp-session": "/camp-session",
   teach: "/teach",
 };
 
@@ -126,6 +128,7 @@ function mergeEntries(primary: readonly ContentEntry[], fallback: readonly Conte
     const key = `${entry.type}:${entry.slug}`;
     if (seen.has(key)) continue;
     seen.add(key);
+    if (entry.status === "archived" && entry.title === "Deleted") continue;
     if (!includeUnpublished && (entry.status !== "published" || entry.visibility !== "public" || entry.content.trim().length === 0)) continue;
     merged.push(entry);
   }

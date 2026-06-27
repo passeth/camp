@@ -15,6 +15,7 @@ const contentDirByType: Record<ContentType, string> = {
   topic: "topics",
   "daily-review": "daily-review",
   "study-log": "study-log",
+  "camp-session": "camp-session",
   teach: "teach",
 };
 
@@ -88,6 +89,7 @@ function quoteYamlString(value: string) {
 function hrefForType(type: ContentType, slug: string) {
   if (type === "press") return `/press/${slug}`;
   if (type === "topic") return `/topics/${slug}`;
+  if (type === "camp-session") return `/camp-session/${slug}`;
   return `/${type}/${slug}`;
 }
 

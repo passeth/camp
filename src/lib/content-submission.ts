@@ -28,6 +28,7 @@ const contentDirByType: Record<ContentType, string> = {
   topic: "topics",
   "daily-review": "daily-review",
   "study-log": "study-log",
+  "camp-session": "camp-session",
   teach: "teach",
 };
 

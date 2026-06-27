@@ -22,6 +22,7 @@ export function tagHref(tag: string, type?: ContentType) {
   if (type === "daily-review") return `/daily-review?${params.toString()}`;
   if (type === "teach") return `/teach?${params.toString()}`;
   if (type === "study-log") return `/study-log?${params.toString()}`;
+  if (type === "camp-session") return `/camp-session?${params.toString()}`;
   return `/?${params.toString()}`;
 }
 

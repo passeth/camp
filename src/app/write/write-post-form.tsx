@@ -90,6 +90,7 @@ export function WritePostForm({ action, replyTo }: WritePostFormProps) {
           올릴 메뉴
           <select className="mt-2" name="type" defaultValue="study-log" required>
             <option value="study-log">Study Log</option>
+            <option value="camp-session">Camp Session</option>
             <option value="topic">Topics</option>
             <option value="press">News Digest</option>
           </select>

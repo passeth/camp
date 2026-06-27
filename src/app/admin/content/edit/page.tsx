@@ -48,6 +48,7 @@ export default async function AdminContentEditPage({ searchParams }: PageProps) 
             메뉴
             <select className="mt-2" name="type" defaultValue={entry.type} required>
               <option value="study-log">Study Log</option>
+              <option value="camp-session">Camp Session</option>
               <option value="topic">Topics</option>
               <option value="press">News Digest</option>
               <option value="daily-review">Daily Review</option>
@@ -82,6 +83,7 @@ export default async function AdminContentEditPage({ searchParams }: PageProps) 
             <select className="mt-2" name="parentType" defaultValue={entry.replyTo?.type ?? ""}>
               <option value="">없음</option>
               <option value="study-log">Study Log</option>
+              <option value="camp-session">Camp Session</option>
               <option value="topic">Topics</option>
               <option value="press">News Digest</option>
               <option value="daily-review">Daily Review</option>

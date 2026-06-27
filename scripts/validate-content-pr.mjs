@@ -4,7 +4,7 @@ import path from "node:path";
 import matter from "gray-matter";
 import { z } from "zod";
 
-const contentTypes = ["press", "topic", "daily-review", "study-log", "teach"];
+const contentTypes = ["press", "topic", "daily-review", "study-log", "camp-session", "teach"];
 const statusValues = ["draft", "review", "published", "archived"];
 const visibilityValues = ["public", "members"];
 const typeDir = new Map([
@@ -12,6 +12,7 @@ const typeDir = new Map([
   ["topic", "topics"],
   ["daily-review", "daily-review"],
   ["study-log", "study-log"],
+  ["camp-session", "camp-session"],
   ["teach", "teach"],
 ]);
 

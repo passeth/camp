@@ -8,13 +8,14 @@ import { contentTypes, type ContentType } from "@/lib/content";
 import { markdownToHtmlDocument } from "@/lib/markdown-to-html";
 import { canUseRemoteContent, createRemoteContent, remoteContentExists } from "@/lib/remote-content-store";
 
-const publishMenus = ["press", "topic", "study-log"] as const;
+const publishMenus = ["press", "topic", "study-log", "camp-session"] as const;
 type PublishMenu = (typeof publishMenus)[number];
 
 const contentDirByMenu: Record<PublishMenu, string> = {
   press: "press",
   topic: "topics",
   "study-log": "study-log",
+  "camp-session": "camp-session",
 };
 
 const publishRequestSchema = z.object({
@@ -100,6 +101,7 @@ async function uniqueSlug(type: PublishMenu, slug: string) {
 function hrefForType(type: PublishMenu, slug: string) {
   if (type === "press") return `/press/${slug}`;
   if (type === "topic") return `/topics/${slug}`;
+  if (type === "camp-session") return `/camp-session/${slug}`;
   return `/study-log/${slug}`;
 }
 

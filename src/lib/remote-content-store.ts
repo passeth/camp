@@ -3,7 +3,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { ContentEntry, ContentType } from "@/lib/content";
 
-const contentTypeSchema = z.enum(["press", "topic", "daily-review", "study-log", "teach"]);
+const contentTypeSchema = z.enum(["press", "topic", "daily-review", "study-log", "camp-session", "teach"]);
 
 const contentRowSchema = z.object({
   slug: z.string(),
@@ -101,6 +101,14 @@ function createReadClient() {
   return hasServiceRoleKey() ? createAdminClient() : createAnonClient();
 }
 
+function remoteTypeFor(type: ContentType) {
+  return type === "camp-session" ? "study-log" : type;
+}
+
+function remoteCategoryFor(input: RemoteContentInput) {
+  return input.type === "camp-session" ? "camp-session" : input.category;
+}
+
 function shortDate(value?: string | null) {
   return value ? value.slice(0, 10) : undefined;
 }
@@ -108,6 +116,7 @@ function shortDate(value?: string | null) {
 function baseHrefForType(type: ContentType) {
   if (type === "press") return "/press";
   if (type === "topic") return "/topics";
+  if (type === "camp-session") return "/camp-session";
   return `/${type}`;
 }
 
@@ -115,11 +124,12 @@ function rowToEntry(row: z.infer<typeof contentRowSchema>): ContentEntry {
   const contentFormat = row.content_format ?? "markdown";
   const createdAt = shortDate(row.created_at) ?? new Date().toISOString().slice(0, 10);
   const publishedAt = shortDate(row.published_at) ?? createdAt;
+  const type = row.type === "study-log" && row.category === "camp-session" ? "camp-session" : row.type;
 
   return {
     title: row.title,
     slug: row.slug,
-    type: row.type,
+    type,
     contentFormat,
     status: row.status as ContentEntry["status"],
     visibility: row.visibility as ContentEntry["visibility"],
@@ -133,7 +143,7 @@ function rowToEntry(row: z.infer<typeof contentRowSchema>): ContentEntry {
     content: row.content?.trim() ?? "",
     excerpt: row.excerpt ?? "",
     replyTo: row.parent_type && row.parent_slug ? { type: row.parent_type, slug: row.parent_slug } : undefined,
-    href: `${baseHrefForType(row.type)}/${row.slug}`.replace(/\/index$/, ""),
+    href: `${baseHrefForType(type)}/${row.slug}`.replace(/\/index$/, ""),
     pathSegments: row.slug.split("/").filter(Boolean),
   };
 }
@@ -174,12 +184,19 @@ export async function getRemoteEntriesByType(type: ContentType, { includeUnpubli
 
   const canReadPrivateRows = hasServiceRoleKey();
   const supabase = createReadClient();
+  const remoteType = remoteTypeFor(type);
   let query = supabase
     .from("content_index")
     .select("slug, type, title, status, visibility, author, member_slug, category, tags, published_at, created_at, updated_at, content_format, content, excerpt, parent_type, parent_slug")
-    .eq("type", type)
+    .eq("type", remoteType)
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
+
+  if (type === "camp-session") {
+    query = query.eq("category", "camp-session");
+  } else if (type === "study-log") {
+    query = query.or("category.is.null,category.neq.camp-session");
+  }
 
   if (!includeUnpublished && !canReadPrivateRows) {
     query = query.eq("status", "published").eq("visibility", "public");
@@ -198,12 +215,17 @@ export async function remoteContentExists(type: ContentType, slug: string) {
   if (!(await canUseRemoteContent({ requireWrite: true }))) return false;
 
   const supabase = createAnonClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("content_index")
     .select("id")
-    .eq("type", type)
-    .eq("slug", slug)
-    .maybeSingle();
+    .eq("type", remoteTypeFor(type))
+    .eq("slug", slug);
+
+  if (type === "camp-session") {
+    query = query.eq("category", "camp-session");
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) throw error;
   return Boolean(data);
@@ -220,13 +242,13 @@ export async function createRemoteContent(input: RemoteContentInput) {
     .from("content_index")
     .insert({
       slug: input.slug,
-      type: input.type,
+      type: remoteTypeFor(input.type),
       title: input.title,
       status: "published",
       visibility: "public",
       author: input.author,
       member_slug: input.memberSlug,
-      category: input.category,
+      category: remoteCategoryFor(input),
       tags: [...new Set(input.tags)],
       published_at: now,
       content_format: "html",
@@ -255,13 +277,13 @@ export async function updateRemoteContent(type: ContentType, slug: string, input
     .from("content_index")
     .upsert({
       slug: input.slug,
-      type: input.type,
+      type: remoteTypeFor(input.type),
       title: input.title,
       status: "published",
       visibility: "public",
       author: input.author,
       member_slug: input.memberSlug,
-      category: input.category,
+      category: remoteCategoryFor(input),
       tags: [...new Set(input.tags)],
       content_format: "html",
       content: input.html,
@@ -286,13 +308,13 @@ export async function deleteRemoteContent(type: ContentType, slug: string) {
     .from("content_index")
     .upsert({
       slug,
-      type,
+      type: remoteTypeFor(type),
       title: "Deleted",
       status: "archived",
       visibility: "public",
       author: "Admin",
       member_slug: "admin",
-      category: "deleted",
+      category: type === "camp-session" ? "camp-session" : "deleted",
       tags: [],
       published_at: now,
       content_format: "html",

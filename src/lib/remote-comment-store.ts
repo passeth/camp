@@ -65,6 +65,12 @@ function createAdminClient() {
     },
   );
 }
+function remoteCommentType(type: RemoteCommentInput["contentType"]) {
+  return type === "camp-session" ? "study-log" : type;
+}
+function remoteCommentSlug(input: Pick<RemoteCommentInput, "contentType" | "contentSlug">) {
+  return input.contentType === "camp-session" ? `camp-session/${input.contentSlug}` : input.contentSlug;
+}
 export async function canUseRemoteComments() {
   const now = Date.now();
   if (remoteCommentsAvailable !== null && now - remoteCommentsCheckedAt < remoteCheckIntervalMs) {
@@ -167,23 +173,27 @@ async function createLegacyComment(input: RemoteCommentInput) {
 }
 export async function getRemoteComments(input: Pick<RemoteCommentInput, "contentType" | "contentSlug">) {
   const supabase = createAnonClient();
+  const contentType = remoteCommentType(input.contentType);
+  const contentSlug = remoteCommentSlug(input);
   const { data, error } = await supabase
     .from("comments")
     .select("id, author_name, body, created_at")
-    .eq("content_type", input.contentType)
-    .eq("content_slug", input.contentSlug)
+    .eq("content_type", contentType)
+    .eq("content_slug", contentSlug)
     .order("created_at", { ascending: true });
   if (!error) return commentRowsSchema.parse(data ?? []).map(commentPayload);
-  return getLegacyComments(input.contentType, input.contentSlug);
+  return getLegacyComments(contentType, contentSlug);
 }
 export async function createRemoteComment(input: RemoteCommentInput) {
   const supabase = createAnonClient();
+  const contentType = remoteCommentType(input.contentType);
+  const contentSlug = remoteCommentSlug(input);
   const { data, error } = await supabase
     .from("comments")
     .insert({
       user_id: null,
-      content_type: input.contentType,
-      content_slug: input.contentSlug,
+      content_type: contentType,
+      content_slug: contentSlug,
       author_name: input.authorName,
       body: input.body,
       password_hash: await createPasswordHash(input.password),
@@ -191,16 +201,18 @@ export async function createRemoteComment(input: RemoteCommentInput) {
     .select("id, author_name, body, created_at")
     .single();
   if (!error) return commentPayload(commentRowSchema.parse(data));
-  return createLegacyComment(input);
+  return createLegacyComment({ ...input, contentType, contentSlug });
 }
 export async function deleteRemoteComment(input: RemoteCommentDeleteInput) {
   const admin = createAdminClient();
+  const contentType = remoteCommentType(input.contentType);
+  const contentSlug = remoteCommentSlug(input);
   const { data, error } = await admin
     .from("comments")
     .select("id, body, password_hash")
     .eq("id", input.commentId)
-    .eq("content_type", input.contentType)
-    .eq("content_slug", input.contentSlug)
+    .eq("content_type", contentType)
+    .eq("content_slug", contentSlug)
     .maybeSingle();
   if (error) throw error;
   if (!data) return { deleted: false as const };

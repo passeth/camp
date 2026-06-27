@@ -46,11 +46,11 @@ export function ShareLinkButton() {
     <button
       type="button"
       onClick={handleClick}
-      className="group flex w-full items-center justify-between rounded-xl border border-[#d9d6ca] bg-white px-3.5 py-3 text-left text-sm font-semibold text-[#171717] transition hover:border-[#171717] hover:bg-[#f7f5ee]"
+      className="group inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--foreground)] hover:bg-[var(--surface-soft)]"
       aria-live="polite"
     >
       <span>{label}</span>
-      <span className="text-base text-[#7a8190] transition group-hover:text-[#171717]" aria-hidden="true">
+      <span className="text-sm text-[var(--muted)] transition group-hover:text-[var(--foreground)]" aria-hidden="true">
         ↗
       </span>
     </button>
