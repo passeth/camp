@@ -59,6 +59,10 @@ export type LinkedChildPost = {
   readonly type: ContentEntry["type"];
 };
 
+function openHrefForEntry(entry: Pick<ContentEntry, "href" | "sourceUrl" | "type">) {
+  return entry.type === "wall-climb" ? entry.sourceUrl ?? "/wall-climb" : entry.href;
+}
+
 export function getChildPostsByParent(entries: readonly ContentEntry[]) {
   const childrenByParent: Record<string, LinkedChildPost[]> = {};
 
@@ -68,7 +72,7 @@ export function getChildPostsByParent(entries: readonly ContentEntry[]) {
     childrenByParent[parentKey] = [
       ...(childrenByParent[parentKey] ?? []),
       {
-        href: entry.href,
+        href: openHrefForEntry(entry),
         title: entry.title,
         type: entry.type,
       },
