@@ -21,11 +21,13 @@ const contentDirByType: Record<ContentType, string> = {
   teach: "teach",
 };
 
+const editableSlugPattern = /^[\p{L}\p{N}]+(?:[/-][\p{L}\p{N}]+)*$/u;
+
 const contentInputSchema = z.object({
   originalType: z.enum(contentTypes),
   originalSlug: z.string().trim().min(1).max(160),
   title: z.string().trim().min(1).max(160),
-  slug: z.string().trim().min(1).max(160).regex(/^[a-z0-9]+(?:[/-][a-z0-9]+)*$/),
+  slug: z.string().trim().min(1).max(160).regex(editableSlugPattern),
   type: z.enum(contentTypes),
   author: z.string().trim().min(1).max(80),
   category: z.string().trim().max(80).optional().or(z.literal("")),
