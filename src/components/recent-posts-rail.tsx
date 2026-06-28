@@ -17,6 +17,14 @@ function entryTime(entry: Pick<ContentEntry, "createdAt" | "publishedAt">) {
   return Date.parse(entry.publishedAt ?? entry.createdAt);
 }
 
+function openHrefForEntry(entry: Pick<ContentEntry, "href" | "sourceUrl" | "type">) {
+  return entry.type === "wall-climb" ? entry.sourceUrl ?? "/wall-climb" : entry.href;
+}
+
+function externalLinkProps(href: string) {
+  return /^https?:\/\//.test(href) ? { target: "_blank", rel: "noreferrer" } : {};
+}
+
 export function RecentPostsRail({ childPostsByParentKey = {}, entries, linkedPostKeys = [], replyCounts = {} }: RecentPostsRailProps) {
   const linkedKeys = new Set(linkedPostKeys);
   const sortedEntries = [...entries].sort((a, b) => {
@@ -45,6 +53,7 @@ export function RecentPostsRail({ childPostsByParentKey = {}, entries, linkedPos
             const replyCount = replyCounts[key] ?? 0;
             const isLinked = linkedKeys.has(key);
             const childPosts = childPostsByParentKey[key] ?? [];
+            const href = openHrefForEntry(entry);
 
             return (
               <div key={key} className={`relative py-3 ${index > 0 ? "border-t border-[var(--line)]" : ""} ${isLinked ? "pl-5" : ""}`}>
@@ -53,7 +62,7 @@ export function RecentPostsRail({ childPostsByParentKey = {}, entries, linkedPos
                     <span className="absolute left-1/2 top-1.5 h-2 w-2 -translate-x-1/2 rounded-full border border-[#8ba39a] bg-white transition" />
                   </span>
                 ) : null}
-                <Link href={entry.href} className="group block transition hover:translate-x-1">
+                <Link href={href} className="group block transition hover:translate-x-1" {...externalLinkProps(href)}>
                   <div className="flex items-start justify-between gap-3">
                     <p className="min-w-0 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">{entry.category ?? entry.type}</p>
                     <p className="shrink-0 rounded-full bg-[var(--surface-soft)] px-2 py-0.5 text-[0.68rem] font-semibold text-[var(--muted)]">답글 {replyCount}</p>
@@ -65,7 +74,7 @@ export function RecentPostsRail({ childPostsByParentKey = {}, entries, linkedPos
                   <div className="mt-3 space-y-2 border-l border-[#d9e1dd] pl-3">
                     <p className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">연결된 게시글 {childPosts.length}</p>
                     {childPosts.slice(0, 3).map((child) => (
-                      <Link key={`${child.type}:${child.href}`} href={child.href} className="block text-xs leading-5 text-[var(--muted)] transition hover:text-[var(--foreground)]">
+                      <Link key={`${child.type}:${child.href}`} href={child.href} className="block text-xs leading-5 text-[var(--muted)] transition hover:text-[var(--foreground)]" {...externalLinkProps(child.href)}>
                         <span className="font-semibold uppercase">{child.type}</span> {child.title}
                       </Link>
                     ))}
