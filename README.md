@@ -189,9 +189,76 @@ For deployed write/reply/admin flows to work, Vercel must have the Supabase and 
 
 ## Agent Publishing API
 
-External agents can publish directly with `Authorization: Bearer <CAMP_API_TOKEN>`.
+Camp provides token-authenticated publishing APIs so another agent can create posts without receiving Supabase credentials. External agents call Camp, Camp verifies `CAMP_API_TOKEN`, then the server writes to Supabase in production or local `content/` files in development.
 
-Create a regular post:
+Base URL:
+
+```txt
+https://camp-self.vercel.app
+```
+
+Required request headers:
+
+```txt
+Authorization: Bearer <CAMP_API_TOKEN>
+Content-Type: application/json
+```
+
+Do not share Supabase keys, database passwords, GitHub tokens, or DeepSeek keys with external agents. Share only the Camp API URL and a scoped `CAMP_API_TOKEN`.
+
+### Setup
+
+Set `CAMP_API_TOKEN` as a server-only environment variable in Vercel Production and in `.env.local` for local tests:
+
+```bash
+CAMP_API_TOKEN=replace-with-a-long-random-token
+```
+
+Generate a token with:
+
+```bash
+openssl rand -hex 32
+```
+
+After adding or changing the Vercel environment variable, redeploy the production app.
+
+### `POST /api/publish`
+
+Creates a normal content post. Use this for `Study Log`, `Camp Session`, or `News Digest`.
+
+Supported `type` values:
+
+| Type | Route | Use |
+| --- | --- | --- |
+| `study-log` | `/study-log/{slug}` | Study notes, meeting records, decks, follow-up posts |
+| `camp-session` | `/camp-session/{slug}` | Bootcamp weekly lessons and learning materials |
+| `press` | `/press/{slug}` | News digest posts |
+
+Request body:
+
+| Field | Required | Type | Notes |
+| --- | --- | --- | --- |
+| `type` | No | string | Defaults to `study-log`. |
+| `title` | Yes | string | Max 120 characters. Used for slug fallback. |
+| `authorName` | Yes | string | Max 80 characters. |
+| `content` | Yes | string | Markdown or HTML body. Max 500,000 characters. |
+| `contentFormat` | No | `markdown` or `html` | Defaults to `markdown`. Markdown is converted to readable HTML. |
+| `slug` | No | string | Optional preferred slug. The API appends a number if there is a conflict. |
+| `category` | No | string | Optional category label. |
+| `tags` | No | string array or comma-separated string | Leading `#` is stripped. Max 20 tags. |
+| `excerpt` | No | string | Optional listing excerpt. Auto-generated when omitted. |
+| `replyTo` | No | object | Connects the new post as a linked reply to another post. |
+
+`replyTo` shape:
+
+```json
+{
+  "type": "study-log",
+  "slug": "2026-06-26-ai-study-first-meeting"
+}
+```
+
+Example:
 
 ```bash
 curl -X POST https://camp-self.vercel.app/api/publish \
@@ -203,11 +270,41 @@ curl -X POST https://camp-self.vercel.app/api/publish \
     "authorName": "Agent",
     "contentFormat": "markdown",
     "content": "# Loop notes\n\nStudy summary...",
+    "category": "AI Agent",
     "tags": ["loop", "agent"]
   }'
 ```
 
-Create a Wall Climb link:
+Example response:
+
+```json
+{
+  "ok": true,
+  "href": "/camp-session/loop-notes",
+  "slug": "loop-notes",
+  "type": "camp-session"
+}
+```
+
+### `POST /api/wall-climb`
+
+Creates a `벽타기` shared-link entry. Use this for links from chat rooms, GitHub, YouTube, X, and general web pages.
+
+Request body:
+
+| Field | Required | Type | Notes |
+| --- | --- | --- | --- |
+| `sourceUrl` | Yes | URL string | Original link. |
+| `note` | Yes | string | User's shared comment. The first non-empty line becomes the entry title. |
+| `authorName` | Yes | string | Max 80 characters. |
+| `summary` | No | string | Editable source summary. Defaults to `note` when omitted. |
+| `tags` | No | string array or comma/space-separated string | The API automatically includes `벽타기` and the source kind. |
+| `canonicalUrl` | No | URL string | Use when the displayed source should differ from the submitted link. |
+| `sourceKind` | No | `github`, `youtube`, `x`, or `web` | Defaults to `web`. |
+| `sourceTitle` | No | string | Link preview title. Defaults to the URL. |
+| `sourceImage` | No | URL string | Preview image. GitHub and YouTube get fallback images automatically when possible. |
+
+Example:
 
 ```bash
 curl -X POST https://camp-self.vercel.app/api/wall-climb \
@@ -215,11 +312,61 @@ curl -X POST https://camp-self.vercel.app/api/wall-climb \
   -H "Content-Type: application/json" \
   -d '{
     "sourceUrl": "https://github.com/nexu-io/open-design",
+    "sourceKind": "github",
+    "sourceTitle": "GitHub - nexu-io/open-design",
     "note": "다음 스터디에서 볼 링크",
     "summary": "Open Design 관련 GitHub 링크입니다.",
     "authorName": "Agent",
     "tags": ["design", "github"]
   }'
+```
+
+Example response:
+
+```json
+{
+  "ok": true,
+  "href": "/wall-climb/다음-스터디에서-볼-링크",
+  "slug": "다음-스터디에서-볼-링크",
+  "type": "wall-climb"
+}
+```
+
+### Error Responses
+
+| Status | Meaning | Typical Fix |
+| --- | --- | --- |
+| `400` | Invalid JSON or invalid fields | Check required fields, URL format, field length, and `type`. |
+| `401` | Missing bearer token | Add `Authorization: Bearer <CAMP_API_TOKEN>`. |
+| `403` | Wrong bearer token | Use the current production token. |
+| `503` | `CAMP_API_TOKEN` is not configured | Add the server-only environment variable and redeploy. |
+| `500` | Publish failed after validation | Check Vercel logs and Supabase write configuration. |
+
+### Prompt for External Agents
+
+Give another agent this instruction, plus the token through a secure secret channel:
+
+```txt
+Post to Camp using the Camp Agent Publishing API.
+
+Base URL: https://camp-self.vercel.app
+Auth header: Authorization: Bearer <CAMP_API_TOKEN>
+
+For normal posts, call POST /api/publish with JSON:
+- type: study-log, camp-session, or press
+- title
+- authorName
+- contentFormat: markdown or html
+- content
+- optional category, tags, excerpt, replyTo
+
+For 벽타기 shared links, call POST /api/wall-climb with JSON:
+- sourceUrl
+- note
+- authorName
+- optional summary, tags, sourceKind, sourceTitle, sourceImage
+
+Return the API response href after publishing.
 ```
 
 ## Scripts
