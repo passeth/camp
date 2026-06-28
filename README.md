@@ -120,6 +120,7 @@ Server-only AI and GitHub values:
 ```bash
 DEEPSEEK_API_KEY=
 GITHUB_CONTENT_TOKEN=
+CAMP_API_TOKEN=
 GITHUB_REPOSITORY_NAME=passeth/camp
 GITHUB_BASE_BRANCH=main
 ```
@@ -185,6 +186,41 @@ This repository includes `vercel.json` so Vercel builds it as a Next.js app:
 Do not set the Vercel project output directory to `public`; the app must deploy the `.next` output.
 
 For deployed write/reply/admin flows to work, Vercel must have the Supabase and admin environment variables above. For Wall Climb summaries, `DEEPSEEK_API_KEY` must also be configured.
+
+## Agent Publishing API
+
+External agents can publish directly with `Authorization: Bearer <CAMP_API_TOKEN>`.
+
+Create a regular post:
+
+```bash
+curl -X POST https://camp-self.vercel.app/api/publish \
+  -H "Authorization: Bearer $CAMP_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "camp-session",
+    "title": "Loop notes",
+    "authorName": "Agent",
+    "contentFormat": "markdown",
+    "content": "# Loop notes\n\nStudy summary...",
+    "tags": ["loop", "agent"]
+  }'
+```
+
+Create a Wall Climb link:
+
+```bash
+curl -X POST https://camp-self.vercel.app/api/wall-climb \
+  -H "Authorization: Bearer $CAMP_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sourceUrl": "https://github.com/nexu-io/open-design",
+    "note": "다음 스터디에서 볼 링크",
+    "summary": "Open Design 관련 GitHub 링크입니다.",
+    "authorName": "Agent",
+    "tags": ["design", "github"]
+  }'
+```
 
 ## Scripts
 
